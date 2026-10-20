@@ -80,7 +80,7 @@
 
     <% if (results.length > 0) { %>
         <% results.forEach(function(movie) { %>
-            <a href="/serial?url=<%= encodeURIComponent(movie.fullLink) %>&title=<%= encodeURIComponent(movie.title) %>" class="list-item">
+            <a href="/series?url=<%= encodeURIComponent(movie.fullLink) %>&title=<%= encodeURIComponent(movie.title) %>" class="list-item">
                 <div class="item-image">
                     <% if (movie.image) { %>
                         <img src="<%= movie.image %>" alt="<%= movie.title %>" loading="lazy">

@@ -1,4 +1,5 @@
-import { HEADERS, log } from "../common.js";
+import { load } from "cheerio";
+import { HEADERS } from "../common.js";
 
 /**
  * @typedef {Object} PlayListItem
@@ -6,42 +7,103 @@ import { HEADERS, log } from "../common.js";
  * @property {string | null} file
  */
 
-
+/**
+ * @typedef PlaylistTranslation
+ * @property {string} translation
+ * @property {PlayListItem[]} plist
+ */
 
 /**
- * @param {string} htmlContent
+ * @param {string} htmlString
+ * @returns {Promise<PlaylistTranslation[]>}
+ */
+export async function parsePlaylistTranslations(htmlString) {
+    const $ = load(htmlString);
+    /** @type {Record<string, string>} */
+    const plMap = {};
+
+    // 1. Extract playlist URLs from all <script> tags
+    $('script').each((_, el) => {
+        const scriptContent = $(el).html();
+        if (!scriptContent) return;
+
+        // Match initial declaration: var pl = { ... };
+        const varPlMatch = scriptContent.match(/var\s+pl\s*=\s*({[^;]+});/);
+        if (varPlMatch) {
+            try {
+                const rawObjStr = varPlMatch[1].replace(/'/g, '"');
+                const parsedObj = JSON.parse(rawObjStr);
+                Object.assign(plMap, parsedObj);
+            } catch (e) {
+                // Fallback for single quotes or non-standard formatting
+                const innerPlRegex = /['"]?(\d+)['"]?\s*:\s*['"]([^'"]+)['"]/g;
+                let innerMatch;
+                while ((innerMatch = innerPlRegex.exec(varPlMatch[1])) !== null) {
+                    plMap[innerMatch[1]] = innerMatch[2];
+                }
+            }
+        }
+
+        // Match individual assignments: pl[id] = "..."
+        const plAssignmentRegex = /pl\[['"]?(\w+)['"]?\]\s*=\s*['"]([^'"]+)['"]/g;
+        let match;
+        while ((match = plAssignmentRegex.exec(scriptContent)) !== null) {
+            plMap[match[1]] = match[2];
+        }
+    });
+
+    // 2. Parse <li> elements using Cheerio selectors
+    /** @type {PlaylistTranslation[]} */
+    const translations = [];
+    const liElements = $('li[data-click="translate"]');
+
+    for(let i = 0; i < liElements.length; i++) {
+        const el = liElements[i];
+        const $li =$(el);
+        let translateId = $li.attr('data-translate');
+
+        // Fallback to '0' if data-translate attribute is empty or missing
+        if (!translateId) {
+            translateId = '0';
+        }
+
+        const translationName = $li.text().trim();
+        const plistUrl = plMap[translateId];
+
+        if (plistUrl) {
+            translations.push({
+                translation: translationName,
+                plist: await fetchPlaylist(plistUrl)
+            });
+        }
+    }
+
+    return translations;
+}
+
+/**
+ * @param {string} plistUrl
  * @returns {Promise<PlayListItem[]>}
  */
-export async function parsePlaylist(htmlContent) {
+export async function fetchPlaylist(plistUrl) {
     /**
      * @type {PlayListItem[]}
      */
     let episodes = [];
+    const playlistUrl = plistUrl.startsWith('http') ? plistUrl : `https://seasonvar.ru${plistUrl}`;
+    const playlistRes = await fetch(playlistUrl, { headers: HEADERS });
+    const playlistData = await playlistRes.json();
 
-    // Extract the `pl` variable containing the playlist path
-    const plMatch = htmlContent.match(/var\s+pl\s*=\s*\{[^}]*['"]0['"]\s*:\s*['"]([^'"]+)['"]/);
-
-    if (plMatch && plMatch[1]) {
-        const playlistPath = plMatch[1];
-        const playlistUrl = playlistPath.startsWith('http') ? playlistPath : `https://seasonvar.ru${playlistPath}`;
-
-        log('log', `✅ [SERIAL DEBUG] Found playlist URL: ${playlistUrl}`);
-
-        const playlistRes = await fetch(playlistUrl, { headers: HEADERS });
-        const playlistData = await playlistRes.json();
-
-        if (Array.isArray(playlistData)) {
-            log('log', `📺 [SERIAL DEBUG] Found ${playlistData.length} episodes.`);
-            episodes = playlistData.map((ep, index) => {
+    if (Array.isArray(playlistData)) {
+        episodes = playlistData
+            .map(ep => {
                 const decodedFile = decodeSeasonvarLink(ep.file);
                 return {
                     title: ep.title.replace(/<br\s*\/?>/gi, ' - ').replace(/\s+/g, ' ').trim(),
                     file: decodedFile
                 };
-            }).filter(ep => ep.file && ep.file.startsWith('http'));
-        }
-    } else {
-        throw new Error('Could not find the playlist URL.');
+            })
+            .filter(ep => ep.file && ep.file.startsWith('http'));
     }
     return episodes;
 }
