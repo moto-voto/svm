@@ -132,7 +132,7 @@
         <ul class="episode-list">
             <% episodes.forEach(function(ep, index) { %>
                 <li class="episode-item <%= index === 0 ? 'active' : '' %>" 
-                    data-url="/proxy-video?url=<%= encodeURIComponent(ep.file) %>"
+                    data-url="<%= ep.file%>"
                     onclick="playEpisode(this)">
                     <span><%- ep.title %></span>
                     <span style="color: #ff9800;">▶</span>

@@ -115,41 +115,6 @@ app.get('/serial', async (req, res) => {
     res.render('serial', { title: title || 'Serial', episodes, error });
 });
 
-// --- ROUTE 3: VIDEO PROXY ---
-app.get('/proxy-video', async (req, res) => {
-    const videoUrl = req.query.url;
-    if (!videoUrl) return res.status(400).send('No video URL provided');
-
-    try {
-        const response = await axios({
-            method: 'get',
-            url: videoUrl,
-            responseType: 'stream',
-            maxRedirects: 5,
-            headers: {
-                'Referer': 'https://seasonvar.ru/',
-                'Origin': 'https://seasonvar.ru',
-                'User-Agent': HEADERS['User-Agent'],
-                'Accept': '*/*',
-                ...(req.headers.range ? { 'Range': req.headers.range } : {})
-            }
-        });
-
-        res.setHeader('Content-Type', response.headers['content-type'] || 'video/mp4');
-        if (response.headers['content-length']) res.setHeader('Content-Length', response.headers['content-length']);
-        if (response.headers['content-range']) res.setHeader('Content-Range', response.headers['content-range']);
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-
-        res.status(response.status);
-        response.data.pipe(res);
-
-    } catch (err) {
-        console.error('❌ Video proxy error:', err.message);
-        res.status(500).send('Error loading video stream');
-    }
-});
-
 // --- DECODER ---
 function decodeSeasonvarLink(encodedStr) {
     try {
