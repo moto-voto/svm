@@ -1,5 +1,4 @@
 const express = require('express');
-const axios = require('axios');
 const cheerio = require('cheerio');
 const path = require('path');
 
@@ -27,8 +26,9 @@ app.get('/', async (req, res) => {
             const searchUrl = `${TARGET}/search?q=${encodeURIComponent(query)}`;
             console.log(`\n🔍 [SEARCH DEBUG] Fetching URL: ${searchUrl}`);
             
-            const response = await axios.get(searchUrl, { headers: HEADERS });
-            const $ = cheerio.load(response.data);
+            const response = await fetch(searchUrl, { headers: HEADERS });
+            const htmlContent = await response.text();
+            const $ = cheerio.load(htmlContent);
 
             // Seasonvar search results are wrapped in .pgs-search-wrap
             $('.pgs-search-wrap').each((i, el) => {
@@ -78,8 +78,8 @@ app.get('/serial', async (req, res) => {
 
     try {
         console.log(`\n🔍 [SERIAL DEBUG] Fetching: ${serialUrl}`);
-        const response = await axios.get(serialUrl, { headers: HEADERS });
-        const htmlContent = response.data;
+        const response = await fetch(serialUrl, { headers: HEADERS });
+        const htmlContent = await response.text();
 
         // Extract the `pl` variable containing the playlist path
         const plMatch = htmlContent.match(/var\s+pl\s*=\s*\{[^}]*['"]0['"]\s*:\s*['"]([^'"]+)['"]/);
@@ -90,8 +90,8 @@ app.get('/serial', async (req, res) => {
             
             console.log(`✅ [SERIAL DEBUG] Found playlist URL: ${playlistUrl}`);
             
-            const playlistRes = await axios.get(playlistUrl, { headers: HEADERS });
-            const playlistData = playlistRes.data;
+            const playlistRes = await fetch(playlistUrl, { headers: HEADERS });
+            const playlistData = await playlistRes.json();
 
             if (Array.isArray(playlistData)) {
                 console.log(`📺 [SERIAL DEBUG] Found ${playlistData.length} episodes.`);
