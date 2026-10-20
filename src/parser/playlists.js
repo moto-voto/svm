@@ -57,6 +57,13 @@ export async function parsePlaylistTranslations(htmlString) {
     const translations = [];
     const liElements = $('li[data-click="translate"]');
 
+    if (liElements.length === 0 && Object.keys(plMap).length > 0) {
+        return [{
+            translation: 'Default',
+            plist: await fetchPlaylist(plMap[Object.keys(plMap)[0]])
+        }];
+    }
+
     for(let i = 0; i < liElements.length; i++) {
         const el = liElements[i];
         const $li =$(el);
