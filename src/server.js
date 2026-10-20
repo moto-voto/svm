@@ -1,10 +1,11 @@
-const express = require('express');
-const cheerio = require('cheerio');
-const path = require('path');
+import express from 'express';
+import { load } from 'cheerio';
+import { join } from 'path';
+const __dirname = import.meta.dirname;
 
 const app = express();
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', join(__dirname, 'views'));
 
 const TARGET = 'https://seasonvar.ru';
 const HEADERS = {
@@ -28,7 +29,7 @@ app.get('/', async (req, res) => {
             
             const response = await fetch(searchUrl, { headers: HEADERS });
             const htmlContent = await response.text();
-            const $ = cheerio.load(htmlContent);
+            const $ = load(htmlContent);
 
             // Seasonvar search results are wrapped in .pgs-search-wrap
             $('.pgs-search-wrap').each((i, el) => {
