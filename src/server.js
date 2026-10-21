@@ -4,6 +4,7 @@ import { log } from './common.js';
 import { apiSearch } from './api/api-search.js';
 import { apiPlaylist } from './api/api-playlist.js';
 import { apiSeries } from './api/api-series.js';
+import { apiSeriesList } from './api/api-series-list.js';
 
 const __dirname = import.meta.dirname;
 
@@ -25,8 +26,6 @@ app.get('/', async (req, res) => {
 
 app.get('/series', async (req, res) => {
     const seriesUrl = String(req.query.url || '');
-    const title = req.query.title;
-
     if (!seriesUrl) {
         return res.redirect('/');
     }
@@ -49,6 +48,14 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
+app.get('/api/series-list', async (req, res) => {
+    try {
+        const seriesList = await apiSeriesList();
+        res.json(seriesList);
+    } catch (err) {
+        res.json({ error: 'Failed to fetch series list.' + (err instanceof Error ? err.message : String(err)) });
+    }
+});
 
 app.get('/api/playlist', async (req, res) => {
     const seriesUrl = String(req.query.url || '');
