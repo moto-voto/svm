@@ -85,6 +85,7 @@
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
             background: rgba(0, 0, 0, 0.3);
@@ -180,8 +181,13 @@
                         HW
                     </button>
 
-                    <!-- Audio Track Picker -->
-                    <button id="btn-audio" class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors" title="Audio Track">
+                    <!-- Seasons Picker -->
+                    <button id="btn-seasons" class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors" title="Seasons">
+                        <i class="fa-solid fa-layer-group text-lg"></i>
+                    </button>
+
+                    <!-- Translations Picker (notes button) -->
+                    <button id="btn-audio" class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors" title="Translations">
                         <i class="fa-solid fa-music text-lg"></i>
                     </button>
 
@@ -189,6 +195,45 @@
                     <button id="btn-menu" class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors" title="More Options">
                         <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- Center Horizontal Panels (Episodes / Translations / Seasons) -->
+            <div class="flex-1 w-full min-h-0 flex flex-col justify-center pointer-events-none">
+                <!-- Episodes Panel -->
+                <div id="panel-episodes" class="panel hidden w-full pointer-events-auto">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Episodes</h3>
+                        <div class="flex items-center space-x-2">
+                            <span id="episode-count" class="text-[10px] text-blue-400 font-semibold"></span>
+                            <button class="panel-close text-gray-400 hover:text-white p-0.5 transition-colors" title="Close"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+                    <div id="episode-scroll" class="flex items-stretch gap-3 overflow-x-auto custom-scrollbar pb-2"></div>
+                </div>
+
+                <!-- Translations Panel -->
+                <div id="panel-translations" class="panel hidden w-full pointer-events-auto">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Translations</h3>
+                        <div class="flex items-center space-x-2">
+                            <span id="translation-count" class="text-[10px] text-blue-400 font-semibold"></span>
+                            <button class="panel-close text-gray-400 hover:text-white p-0.5 transition-colors" title="Close"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+                    <div id="translation-scroll" class="flex items-stretch gap-3 overflow-x-auto custom-scrollbar pb-2"></div>
+                </div>
+
+                <!-- Seasons Panel -->
+                <div id="panel-seasons" class="panel hidden w-full pointer-events-auto">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Seasons</h3>
+                        <div class="flex items-center space-x-2">
+                            <span id="season-count" class="text-[10px] text-blue-400 font-semibold"></span>
+                            <button class="panel-close text-gray-400 hover:text-white p-0.5 transition-colors" title="Close"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+                    <div id="season-scroll" class="flex items-stretch gap-3 overflow-x-auto custom-scrollbar pb-2"></div>
                 </div>
             </div>
 
@@ -230,9 +275,9 @@
                         </button>
                     </div>
 
-                    <!-- Right Controls Group: Playlist Drawer & Fullscreen -->
+                    <!-- Right Controls Group: Episodes & Fullscreen -->
                     <div class="flex items-center space-x-3">
-                        <button id="btn-playlist-toggle" class="text-gray-300 hover:text-blue-400 p-2 transition-colors relative" title="Episodes & Seasons">
+                        <button id="btn-playlist-toggle" class="text-gray-300 hover:text-blue-400 p-2 transition-colors relative" title="Episodes">
                             <i class="fa-solid fa-list-ul text-lg sm:text-xl"></i>
                         </button>
                         <button id="btn-fullscreen" class="text-gray-300 hover:text-white p-2 transition-colors" title="Toggle Fullscreen">
@@ -242,57 +287,6 @@
                 </div>
             </div>
 
-        </div>
-
-        <!-- Side Playlist Drawer Overlay -->
-        <div id="playlist-drawer" class="absolute top-0 right-0 bottom-0 z-50 w-full sm:w-80 sm:max-w-md bg-black/40 backdrop-blur-md border-l border-white/10 flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out shadow-2xl">
-            <!-- Drawer Header with Season & Audio/Translation Selectors -->
-            <div class="p-4 border-b border-white/10 flex flex-col space-y-3 bg-white/5">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-tv text-blue-400"></i>
-                        <h2 class="font-bold text-white tracking-wide text-sm sm:text-base">Media Selector</h2>
-                    </div>
-                    <button id="btn-close-drawer" class="text-gray-400 hover:text-white p-1 rounded-lg transition-colors">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
-                </div>
-
-                <!-- Season Dropdown -->
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Season</label>
-                    <div class="relative">
-                        <select id="season-select" class="w-full bg-zinc-900/80 text-white text-xs sm:text-sm font-semibold rounded-lg px-3 py-2 border border-white/15 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer pr-8">
-                            <!-- Populated via JS -->
-                        </select>
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Translation / Audio Dropdown -->
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Audio / Translation</label>
-                    <div class="relative">
-                        <select id="translation-select" class="w-full bg-zinc-900/80 text-white text-xs sm:text-sm font-semibold rounded-lg px-3 py-2 border border-white/15 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer pr-8">
-                            <!-- Populated via JS -->
-                        </select>
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
-                            <i class="fa-solid fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Episode List Container Header & Items -->
-            <div class="px-4 pt-3 pb-1 flex items-center justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Episodes</span>
-                <span id="episode-count" class="text-[10px] text-blue-400 font-semibold"></span>
-            </div>
-            <div id="episode-list" class="flex-1 overflow-y-auto custom-scrollbar p-3 pt-1 space-y-2">
-                <!-- Episodes inserted via JS -->
-            </div>
         </div>
 
     </div>
@@ -309,6 +303,7 @@
         let controlsTimeout = null;
         let osdTimeout = null;
         let decoderMode = 'HW';
+        let activePanel = null;
 
         // Horizontal Gesture Variables
         let isHorizontalSwipe = false;
@@ -338,12 +333,16 @@
         const btnAudio = document.getElementById('btn-audio');
         const btnRotate = document.getElementById('btn-rotate');
 
-        const playlistDrawer = document.getElementById('playlist-drawer');
         const btnPlaylistToggle = document.getElementById('btn-playlist-toggle');
-        const btnCloseDrawer = document.getElementById('btn-close-drawer');
-        const seasonSelect = document.getElementById('season-select');
-        const translationSelect = document.getElementById('translation-select');
-        const episodeList = document.getElementById('episode-list');
+        const btnSeasons = document.getElementById('btn-seasons');
+        const episodeScroll = document.getElementById('episode-scroll');
+        const translationScroll = document.getElementById('translation-scroll');
+        const seasonScroll = document.getElementById('season-scroll');
+        const panels = {
+            episodes: document.getElementById('panel-episodes'),
+            translations: document.getElementById('panel-translations'),
+            seasons: document.getElementById('panel-seasons')
+        };
 
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingTitle = document.getElementById('loading-title');
@@ -373,23 +372,115 @@
             const currentSeasonIdx = currentPayload.seasons.findIndex(s => s.isCurrent);
             selectedSeasonIndex = currentSeasonIdx !== -1 ? currentSeasonIdx : 0;
             
-            populateSeasonSelect();
-            renderEpisodeList();
+            renderSeasons();
+            renderTranslations();
+            renderEpisodes();
             loadEpisode(0, false);
             resetControlsTimer();
         }
 
-        // Populate Seasons Selector
-        function populateSeasonSelect() {
-            seasonSelect.innerHTML = '';
+        // Render Seasons Horizontal Panel
+        function renderSeasons() {
+            seasonScroll.innerHTML = '';
+            const countLabel = document.getElementById('season-count');
+            if (countLabel) countLabel.textContent = `${currentPayload.seasons.length} seasons`;
+
             currentPayload.seasons.forEach((season, index) => {
-                const opt = document.createElement('option');
-                opt.value = index;
-                const cleanedName = cleanTitle(season.title);
-                opt.textContent = season.isCurrent ? `${cleanedName} ★` : cleanedName;
-                seasonSelect.appendChild(opt);
+                const isActive = index === selectedSeasonIndex;
+                const epCount = isActive
+                    ? (currentPayload.currentSeasonPlaylists || []).reduce((sum, t) => sum + (t.plist?.length || 0), 0)
+                    : 0;
+                const meta = epCount > 0 ? `${epCount} episodes` : 'Tap to load';
+
+                const tile = document.createElement('div');
+                tile.className = `flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm ${
+                    isActive
+                        ? 'bg-blue-600/30 border-blue-500/60 text-white'
+                        : 'bg-black/30 border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/20'
+                }`;
+                tile.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <i class="fa-solid ${isActive ? 'fa-circle-play text-blue-400' : 'fa-layer-group text-gray-400'}"></i>
+                        <span class="text-[10px] text-gray-400">${isActive ? 'Now' : ''}</span>
+                    </div>
+                    <p class="text-xs font-semibold truncate text-gray-100">${cleanTitle(season.title)}</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">${meta}</p>
+                `;
+                tile.addEventListener('click', () => changeSeason(index));
+                seasonScroll.appendChild(tile);
             });
-            seasonSelect.value = selectedSeasonIndex;
+        }
+
+        // Render Translations Horizontal Panel
+        function renderTranslations() {
+            translationScroll.innerHTML = '';
+            const translations = currentPayload.currentSeasonPlaylists || [];
+            const countLabel = document.getElementById('translation-count');
+            if (countLabel) countLabel.textContent = `${translations.length} available`;
+
+            if (translations.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = "text-xs text-gray-400 py-4";
+                emptyMsg.textContent = "No translations found.";
+                translationScroll.appendChild(emptyMsg);
+                return;
+            }
+
+            translations.forEach((trans, index) => {
+                const isActive = index === selectedTranslationIndex;
+                const tile = document.createElement('div');
+                tile.className = `flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm ${
+                    isActive
+                        ? 'bg-blue-600/30 border-blue-500/60 text-white'
+                        : 'bg-black/30 border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/20'
+                }`;
+                tile.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <i class="fa-solid ${isActive ? 'fa-circle-check text-blue-400' : 'fa-language text-gray-400'}"></i>
+                        <span class="text-[10px] text-gray-400">${trans.plist.length} eps</span>
+                    </div>
+                    <p class="text-xs font-semibold truncate text-gray-100">${trans.translation}</p>
+                `;
+                tile.addEventListener('click', () => selectTranslation(index));
+                translationScroll.appendChild(tile);
+            });
+        }
+
+        // Render Episodes Horizontal Panel
+        function renderEpisodes() {
+            episodeScroll.innerHTML = '';
+            const activePlaylist = currentPayload.currentSeasonPlaylists?.[selectedTranslationIndex]?.plist || [];
+            const countLabel = document.getElementById('episode-count');
+            if (countLabel) countLabel.textContent = `${activePlaylist.length} available`;
+
+            if (activePlaylist.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = "text-xs text-gray-400 py-4";
+                emptyMsg.textContent = "No episodes found for this translation.";
+                episodeScroll.appendChild(emptyMsg);
+                return;
+            }
+
+            activePlaylist.forEach((ep, index) => {
+                const isPlaying = index === currentEpisodeIndex;
+                const tile = document.createElement('div');
+                tile.className = "flex-shrink-0 w-40 sm:w-52 cursor-pointer group/ep";
+                tile.innerHTML = `
+                    <div class="relative h-24 sm:h-28 rounded-xl overflow-hidden border transition-all flex items-center justify-center ${
+                        isPlaying ? 'border-blue-500/70 bg-blue-600/25' : 'border-white/10 bg-black/30 group-hover/ep:bg-white/10 group-hover/ep:border-white/25'
+                    }">
+                        <i class="fa-solid ${isPlaying ? 'fa-circle-play text-blue-400' : 'fa-film text-gray-400'} text-3xl"></i>
+                        <span class="absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-gray-200">E${index + 1}</span>
+                        ${isPlaying ? '<span class="absolute bottom-1 right-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-600 text-white">Playing</span>' : ''}
+                    </div>
+                    <p class="text-xs font-semibold truncate mt-1.5 ${isPlaying ? 'text-blue-300' : 'text-gray-200'}">${ep.title}</p>
+                `;
+                tile.addEventListener('click', () => {
+                    loadEpisode(index, true, 0);
+                    closePanels();
+                });
+                episodeScroll.appendChild(tile);
+            });
         }
 
         // Season Switch with Mock Loader
@@ -403,70 +494,27 @@
             setTimeout(() => {
                 selectedSeasonIndex = newSeasonIndex;
                 currentEpisodeIndex = 0;
-                populateSeasonSelect();
-                renderEpisodeList();
+                renderSeasons();
+                renderTranslations();
+                renderEpisodes();
                 loadEpisode(0, true);
                 hideLoader();
             }, 600);
         }
 
-        // Render Translations Header & Playlist Items
-        function renderEpisodeList() {
-            episodeList.innerHTML = '';
-            
-            // 1. Render Translation Dropdown Options
-            if (translationSelect) {
-                translationSelect.innerHTML = '';
-                if (currentPayload.currentSeasonPlaylists && currentPayload.currentSeasonPlaylists.length > 0) {
-                    currentPayload.currentSeasonPlaylists.forEach((trans, idx) => {
-                        const opt = document.createElement('option');
-                        opt.value = idx;
-                        opt.textContent = ` ${trans.translation} (${trans.plist.length} eps)`;
-                        translationSelect.appendChild(opt);
-                    });
-                    translationSelect.value = selectedTranslationIndex;
-                }
+        // Select Translation
+        function selectTranslation(newIndex) {
+            newIndex = parseInt(newIndex, 10);
+            if (selectedTranslationIndex === newIndex) return;
+            const currentTime = video.currentTime || 0;
+            selectedTranslationIndex = newIndex;
+            const activePlaylist = currentPayload.currentSeasonPlaylists?.[selectedTranslationIndex]?.plist || [];
+            if (currentEpisodeIndex >= activePlaylist.length) {
+                currentEpisodeIndex = 0;
             }
-
-            // 2. Active Episode List
-            const activePlaylist = currentPayload.currentSeasonPlaylists[selectedTranslationIndex]?.plist || [];
-            
-            const countLabel = document.getElementById('episode-count');
-            if (countLabel) countLabel.textContent = `${activePlaylist.length} available`;
-
-            if (activePlaylist.length === 0) {
-                const emptyMsg = document.createElement('div');
-                emptyMsg.className = "text-center text-xs text-gray-400 py-6";
-                emptyMsg.textContent = "No episodes found for this translation.";
-                episodeList.appendChild(emptyMsg);
-                return;
-            }
-
-            activePlaylist.forEach((ep, index) => {
-                const isPlaying = index === currentEpisodeIndex;
-                const item = document.createElement('div');
-                item.className = `flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm ${
-                    isPlaying 
-                        ? 'bg-blue-600/30 border-blue-500/60 text-white' 
-                        : 'bg-black/30 border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/20'
-                }`;
-
-                item.innerHTML = `
-                    <div class="relative w-10 h-9 bg-black/40 rounded-lg flex-shrink-0 flex items-center justify-center border border-white/10">
-                        <i class="fa-solid ${isPlaying ? 'fa-circle-play text-blue-400' : 'fa-film text-gray-400'} text-sm"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-xs font-semibold truncate text-gray-100">${ep.title}</p>
-                    </div>
-                `;
-
-                item.addEventListener('click', () => {
-                    loadEpisode(index, true, 0);
-                    closeDrawer();
-                });
-
-                episodeList.appendChild(item);
-            });
+            renderTranslations();
+            renderEpisodes();
+            loadEpisode(currentEpisodeIndex, !video.paused, currentTime);
         }
 
         // Load Specific Episode (supports initial position timestamp)
@@ -483,7 +531,7 @@
             videoTitle.textContent = ep.title;
             seriesSubtitle.textContent = `${currentSeasonTitle} • ${translationName}`;
 
-            renderEpisodeList();
+            renderEpisodes();
             video.load();
 
             // Set seek position once video metadata is ready
@@ -551,18 +599,10 @@
             loadingOverlay.classList.add('opacity-0', 'pointer-events-none');
         }
 
-        // Audio Track Quick Picker OSD Toggle
-        btnAudio.addEventListener('click', () => {
-            const translations = currentPayload.currentSeasonPlaylists;
-            if (!translations || translations.length === 0) return;
-            
-            const currentTime = video.currentTime || 0;
-            selectedTranslationIndex = (selectedTranslationIndex + 1) % translations.length;
-            const newTrans = translations[selectedTranslationIndex];
-            
-            renderEpisodeList();
-            loadEpisode(currentEpisodeIndex, !video.paused, currentTime);
-            showOSD('fa-language', newTrans.translation, 'Audio Track');
+        // Translations Panel Toggle (notes button)
+        btnAudio.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanel('translations');
         });
 
         // Previous & Next Episode Controls
@@ -586,40 +626,47 @@
         btnPrev.addEventListener('click', playPrevEpisode);
         btnNext.addEventListener('click', playNextEpisode);
 
-        // Toggle Drawer
-        function openDrawer() {
-            playlistDrawer.classList.remove('translate-x-full');
+        // Center Panels (Episodes / Translations / Seasons)
+        function openPanel(name) {
+            activePanel = name;
+            Object.entries(panels).forEach(([key, el]) => {
+                el.classList.toggle('hidden', key !== name);
+            });
+            resetControlsTimer();
         }
 
-        function closeDrawer() {
-            playlistDrawer.classList.add('translate-x-full');
+        function closePanels() {
+            activePanel = null;
+            Object.values(panels).forEach((el) => el.classList.add('hidden'));
+            resetControlsTimer();
         }
 
+        function togglePanel(name) {
+            if (activePanel === name) {
+                closePanels();
+            } else {
+                openPanel(name);
+            }
+        }
+
+        // Playlist button (bottom-right) opens episodes only
         btnPlaylistToggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (playlistDrawer.classList.contains('translate-x-full')) {
-                openDrawer();
-            } else {
-                closeDrawer();
-            }
+            togglePanel('episodes');
         });
 
-        btnCloseDrawer.addEventListener('click', closeDrawer);
-        seasonSelect.addEventListener('change', (e) => changeSeason(e.target.value));
+        // Seasons button (top-right) opens seasons
+        btnSeasons.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanel('seasons');
+        });
 
-        // Translation Selector Change Listener
-        translationSelect.addEventListener('change', (e) => {
-            const newIndex = parseInt(e.target.value, 10);
-            if (selectedTranslationIndex !== newIndex) {
-                const currentTime = video.currentTime || 0;
-                selectedTranslationIndex = newIndex;
-                const activePlaylist = currentPayload.currentSeasonPlaylists[selectedTranslationIndex]?.plist || [];
-                if (currentEpisodeIndex >= activePlaylist.length) {
-                    currentEpisodeIndex = 0;
-                }
-                renderEpisodeList();
-                loadEpisode(currentEpisodeIndex, !video.paused, currentTime);
-            }
+        // Panel close buttons
+        document.querySelectorAll('.panel-close').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closePanels();
+            });
         });
 
         // Toggle Fullscreen
@@ -684,7 +731,7 @@
             
             clearTimeout(controlsTimeout);
             controlsTimeout = setTimeout(() => {
-                if (!video.paused && playlistDrawer.classList.contains('translate-x-full')) {
+                if (!video.paused && !activePanel) {
                     controlsOverlay.classList.remove('opacity-100');
                     controlsOverlay.classList.add('opacity-0', 'pointer-events-none');
                 }
@@ -693,8 +740,8 @@
 
         // Toggle Controls Display on Container Click/Tap
         gestureLayer.addEventListener('click', () => {
-            if (!playlistDrawer.classList.contains('translate-x-full')) {
-                closeDrawer();
+            if (activePanel) {
+                closePanels();
                 return;
             }
 
@@ -717,7 +764,7 @@
         // Screen Lock Feature
         btnLock.addEventListener('click', () => {
             isLocked = true;
-            closeDrawer();
+            closePanels();
             controlsOverlay.classList.add('opacity-0', 'pointer-events-none');
             unlockBtn.classList.remove('hidden');
             showOSD('fa-lock', 'Screen Locked');
