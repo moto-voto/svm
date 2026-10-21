@@ -1,9 +1,11 @@
 import { HEADERS, TARGET } from '../common.js';
 import { parseDefaultList } from '../parser/defaultList.js';
 import { parseSearchResults } from '../parser/search.js';
+/** @import { SerialDescription } from '../parser/search.js'; */
 
 /**
  * @param {string} query
+ * @returns {Promise<SerialDescription[]>}
  */
 export async function apiSearch(query) {
     if (query) {
