@@ -1,106 +1,379 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Seasonvar Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Media Gallery Grid (Virtualised)</title>
+    <!-- Tailwind CSS for utility styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#f39c12',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 15px; }
-        h1 { font-size: 24px; color: #ff9800; text-align: center; margin-bottom: 20px; }
-        form { display: flex; margin-bottom: 20px; }
-        input[type="text"] { flex: 1; padding: 12px; border: none; border-radius: 8px 0 0 8px; font-size: 16px; background: #2c2c2c; color: #fff; }
-        button { padding: 12px 20px; border: none; border-radius: 0 8px 8px 0; background: #ff9800; color: #000; font-weight: bold; font-size: 16px; cursor: pointer; }
-        
-        /* Search Result Card */
-        .list-item { 
-            background: #1e1e1e; 
-            margin-bottom: 12px; 
-            border-radius: 8px; 
-            text-decoration: none; 
-            color: #fff; 
-            display: flex;
-            overflow: hidden;
-            border-left: 4px solid #ff9800;
-        }
-        .list-item:hover { background: #2a2a2a; }
-        
-        /* Image Container */
-        .item-image {
-            width: 90px;
-            min-width: 90px;
-            height: 135px;
-            background: #000;
-        }
-        .item-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        /* Base reset & modern font rendering */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overflow-y: scroll;
         }
 
-        /* Text Container */
-        .item-info {
-            padding: 12px;
+        /* Poster card aspect ratio (~ 2 : 3.1) matching media posters */
+        .poster-card {
+            position: absolute;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background-color: #1a1a1a;
+            user-select: none;
+            display: block;
+            text-decoration: none;
+            will-change: transform;
+        }
+
+        /* Active touch response */
+        .poster-card:active {
+            transform: scale(0.96);
+        }
+
+        /* Hover elevation on mouse devices */
+        @media (hover: hover) {
+            .poster-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+            }
+        }
+
+        /* Background image container */
+        .poster-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center top;
+            transition: transform 0.3s ease;
+        }
+
+        @media (hover: hover) {
+            .poster-card:hover .poster-bg {
+                transform: scale(1.05);
+            }
+        }
+
+        /* Bottom gradient overlay for title legibility */
+        .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0) 0%,
+                rgba(0, 0, 0, 0.2) 40%,
+                rgba(0, 0, 0, 0.85) 75%,
+                rgba(0, 0, 0, 0.98) 100%
+            );
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-        }
-        .item-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #ff9800;
-            margin-bottom: 6px;
-            line-height: 1.2;
-        }
-        .item-desc {
-            font-size: 13px;
-            color: #aaa;
-            line-height: 1.4;
-            /* Limit description to 4 lines */
-            display: -webkit-box;
-            -webkit-line-clamp: 4;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            justify-content: flex-end;
+            padding: 12px 10px;
+            text-align: center;
+            color: #ffffff;
         }
 
-        .error { background: #d32f2f; color: white; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center; }
-        .empty { text-align: center; color: #888; margin-top: 50px; }
+        /* Legible text shadow */
+        .text-shadow-sm {
+            text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+        }
+
+        /* Custom smooth scrollbar for modern browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
+        }
     </style>
 </head>
-<body>
-    <h1>Seasonvar Mobile</h1>
+<body class="bg-neutral-950 text-neutral-100 min-h-screen">
 
-    <form action="/" method="GET">
-        <input type="text" name="q" placeholder="Поиск сериала..." value="<%= query %>" required>
-        <button type="submit">Go</button>
-    </form>
+    <!-- Header & Controls -->
+    <header class="sticky top-0 z-30 bg-[#121212] border-b border-neutral-800 px-4 py-3 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col items-center gap-2">
+            <!-- Centered Header Title -->
+            <div class="flex items-center justify-center w-full relative">
+                <h1 class="text-base sm:text-lg font-bold text-[#ff9800] tracking-wide">Seasonvar Mobile</h1>
+                <span id="renderedStats" class="absolute right-0 text-xs bg-[#ff9800]/15 text-[#ff9800] font-semibold px-2 py-0.5 rounded-full">
+                    0 / 10,000
+                </span>
+            </div>
 
-    <% if (error) { %>
-        <div class="error"><%= error %></div>
-    <% } %>
+            <!-- Search Bar Row -->
+            <form id="searchForm" class="w-full flex items-center shadow-inner rounded-md overflow-hidden bg-[#2d2d2d] border border-neutral-700/60 focus-within:border-[#ff9800] transition-colors" onsubmit="return false;">
+                <input type="text" id="searchInput" placeholder="Поиск сериала..." 
+                       class="w-full px-3 py-1.5 text-sm bg-transparent text-neutral-100 placeholder-neutral-400 focus:outline-none">
+                <button type="submit" id="searchBtn" class="bg-[#ff9800] hover:bg-[#e68900] active:bg-[#cc7a00] text-black font-bold text-sm px-4 py-1.5 transition-colors shrink-0 flex items-center justify-center">
+                    Go
+                </button>
+            </form>
+        </div>
+    </header>
 
-    <% if (results.length > 0) { %>
-        <% results.forEach(function(movie) { %>
-            <a href="/series?url=<%= encodeURIComponent(movie.fullLink) %>&title=<%= encodeURIComponent(movie.title) %>" class="list-item">
-                <div class="item-image">
-                    <% if (movie.image) { %>
-                        <img src="<%= movie.image %>" alt="<%= movie.title %>" loading="lazy">
-                    <% } else { %>
-                        <!-- Placeholder if no image -->
-                        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#444;">No IMG</div>
-                    <% } %>
-                </div>
-                <div class="item-info">
-                    <div class="item-title"><%= movie.title %></div>
-                    <% if (movie.description) { %>
-                        <div class="item-desc"><%= movie.description %></div>
-                    <% } %>
-                </div>
-            </a>
-        <% }); %>
-    <% } else if (query) { %>
-        <div class="empty">По запросу "<%= query %>" ничего не найдено.</div>
-    <% } else { %>
-        <div class="empty">Введите название сериала для поиска.</div>
-    <% } %>
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6">
+        <!-- Empty search result state -->
+        <div id="noResults" class="hidden py-16 text-center text-gray-500 dark:text-gray-400">
+            Ничего не найдено
+        </div>
+
+        <!-- Virtualized Scroll Viewport Canvas -->
+        <div id="virtualCanvas" class="relative w-full">
+            <!-- Dynamic DOM Cards mounted here -->
+        </div>
+    </main>
+
+    <script>
+        // Global dataset & active list state
+        const allItems = <%- JSON.stringify(results) %>;
+        let filteredItems = allItems;
+
+        /**
+         * Virtualization Grid Controller
+         */
+        class GridVirtualizer {
+            constructor(containerId, statsId, noResultsId) {
+                this.container = document.getElementById(containerId);
+                this.statsElem = document.getElementById(statsId);
+                this.noResultsElem = document.getElementById(noResultsId);
+
+                // Grid layout config
+                this.minCardWidth = 150; // Minimum card width in px
+                this.gap = 16;           // Space between cards in px
+                this.aspectRatio = 2 / 3.1;
+                this.bufferRows = 2;     // Offscreen rows to render ahead/behind
+
+                // Calculated layout state
+                this.columns = 1;
+                this.cardWidth = 0;
+                this.cardHeight = 0;
+                this.rowHeight = 0;
+                this.totalRows = 0;
+
+                // Active DOM cache for recycling
+                this.mountedNodes = new Map(); // Index -> DOM element
+
+                // Bind handlers
+                this.onScroll = this.onScroll.bind(this);
+                this.onResize = this.onResize.bind(this);
+
+                window.addEventListener('scroll', this.onScroll, { passive: true });
+                window.addEventListener('resize', this.onResize);
+                window.addEventListener('orientationchange', this.onResize);
+            }
+
+            /**
+             * Recalculate column layout based on container width
+             */
+            updateDimensions() {
+                const containerWidth = this.container.clientWidth || (window.innerWidth - 32);
+                
+                // Adjust min width for tablets / desktop
+                if (window.innerWidth >= 480) {
+                    this.minCardWidth = 170;
+                    this.gap = 20;
+                } else {
+                    this.minCardWidth = 145;
+                    this.gap = 14;
+                }
+
+                // Calculate number of columns fitting container width
+                this.columns = Math.max(1, Math.floor((containerWidth + this.gap) / (this.minCardWidth + this.gap)));
+                
+                // Expand card width to fill row evenly
+                const totalGaps = (this.columns - 1) * this.gap;
+                this.cardWidth = (containerWidth - totalGaps) / this.columns;
+                this.cardHeight = this.cardWidth / this.aspectRatio;
+                this.rowHeight = this.cardHeight + this.gap;
+
+                // Set container canvas height to match full virtualized dataset height
+                this.totalRows = Math.ceil(filteredItems.length / this.columns);
+                const totalHeight = this.totalRows > 0 ? (this.totalRows * this.rowHeight - this.gap) : 0;
+                this.container.style.height = `${totalHeight}px`;
+            }
+
+            /**
+             * Compute visible items window and mount/unmount DOM elements
+             */
+            render() {
+                if (filteredItems.length === 0) {
+                    this.noResultsElem.classList.remove('hidden');
+                    this.clearAllNodes();
+                    this.statsElem.textContent = `0 / 0 loaded`;
+                    return;
+                }
+                this.noResultsElem.classList.add('hidden');
+
+                // Determine viewport boundaries relative to container
+                const containerTop = this.container.getBoundingClientRect().top + window.scrollY;
+                const scrollTop = Math.max(0, window.scrollY - containerTop);
+                const viewportHeight = window.innerHeight;
+
+                // Calculate starting and ending row indices
+                let startRow = Math.floor(scrollTop / this.rowHeight) - this.bufferRows;
+                let endRow = Math.ceil((scrollTop + viewportHeight) / this.rowHeight) + this.bufferRows;
+
+                startRow = Math.max(0, startRow);
+                endRow = Math.min(this.totalRows - 1, endRow);
+
+                const startIndex = startRow * this.columns;
+                const endIndex = Math.min(filteredItems.length - 1, ((endRow + 1) * this.columns) - 1);
+
+                const visibleIndices = new Set();
+                for (let i = startIndex; i <= endIndex; i++) {
+                    visibleIndices.add(i);
+                }
+
+                // Unmount / recycle nodes out of range
+                for (const [index, node] of this.mountedNodes.entries()) {
+                    if (!visibleIndices.has(index)) {
+                        node.remove();
+                        this.mountedNodes.delete(index);
+                    }
+                }
+
+                // Mount new visible nodes
+                for (let index = startIndex; index <= endIndex; index++) {
+                    if (!this.mountedNodes.has(index)) {
+                        const item = filteredItems[index];
+                        const node = this.createCardElement(item, index);
+                        this.container.appendChild(node);
+                        this.mountedNodes.set(index, node);
+                    } else {
+                        // Update position on resize
+                        this.positionCardNode(this.mountedNodes.get(index), index);
+                    }
+                }
+
+                // Update loaded counter in header
+                this.statsElem.textContent = `${this.mountedNodes.size} visible (of ${filteredItems.length.toLocaleString()})`;
+            }
+
+            /**
+             * Position DOM node dynamically using absolute CSS coordinates
+             */
+            positionCardNode(node, index) {
+                const row = Math.floor(index / this.columns);
+                const col = index % this.columns;
+
+                const left = col * (this.cardWidth + this.gap);
+                const top = row * this.rowHeight;
+
+                node.style.width = `${this.cardWidth}px`;
+                node.style.height = `${this.cardHeight}px`;
+                node.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+            }
+
+            /**
+             * Construct card element with minimal overhead
+             */
+            createCardElement(item, index) {
+                const card = document.createElement('a');
+                card.href = `/series?url=${encodeURIComponent(item.fullLink)}`;
+                card.rel = 'noopener noreferrer';
+                card.className = 'poster-card';
+                
+                this.positionCardNode(card, index);
+
+                card.innerHTML = `
+                    <div class="poster-bg" style="background-image: url('${item.image}')"></div>
+                    <div class="card-overlay">
+                        <h2 class="text-xs sm:text-sm font-bold text-white leading-snug text-shadow-sm line-clamp-2">
+                            ${this.escapeHTML(item.title)}
+                        </h2>
+                    </div>
+                `;
+                return card;
+            }
+
+            escapeHTML(str) {
+                return str.replace(/[&<>'"]/g, 
+                    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+                );
+            }
+
+            clearAllNodes() {
+                for (const node of this.mountedNodes.values()) {
+                    node.remove();
+                }
+                this.mountedNodes.clear();
+            }
+
+            onScroll() {
+                requestAnimationFrame(() => this.render());
+            }
+
+            onResize() {
+                this.updateDimensions();
+                this.render();
+            }
+
+            setData(newData) {
+                filteredItems = newData;
+                this.clearAllNodes();
+                this.updateDimensions();
+                window.scrollTo(0, 0);
+                this.render();
+            }
+        }
+
+        // Initialize Virtualizer App
+        let virtualizer;
+        window.addEventListener('DOMContentLoaded', () => {
+            virtualizer = new GridVirtualizer('virtualCanvas', 'renderedStats', 'noResults');
+            virtualizer.updateDimensions();
+            virtualizer.render();
+
+            const searchInput = document.getElementById('searchInput');
+            const searchForm = document.getElementById('searchForm');
+
+            const performSearch = () => {
+                const query = searchInput.value.toLowerCase().trim();
+                if (!query) {
+                    virtualizer.setData(allItems);
+                } else {
+                    const filtered = allItems.filter(item => 
+                        item.title && item.title.toLowerCase().includes(query)
+                    );
+                    virtualizer.setData(filtered);
+                }
+            };
+
+            // Trigger search on form submit (Go button click or Enter key)
+            searchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                performSearch();
+            });
+
+            // Instant filter with slight debounce during typing
+            let searchTimeout;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(performSearch, 200);
+            });
+        });
+    </script>
 </body>
 </html>
