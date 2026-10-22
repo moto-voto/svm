@@ -306,6 +306,10 @@ export default function PlayerPage() {
 
         const onTouchStart = (event) => {
             if (isLocked() || !playerContainer) return;
+            // When a panel is open (or the touch starts inside a horizontally
+            // scrollable panel), let the panel handle the gesture instead of
+            // seeking / changing volume or brightness.
+            if (activePanel() || event.target.closest?.('.custom-scrollbar')) return;
             const touch = event.touches[0];
             const rect = playerContainer.getBoundingClientRect();
             const x = touch.clientX - rect.left;
@@ -323,7 +327,7 @@ export default function PlayerPage() {
         };
 
         const onTouchMove = (event) => {
-            if (!swiping || isLocked() || !video || !playerContainer) return;
+            if (!swiping || isLocked() || activePanel() || !video || !playerContainer) return;
             const touch = event.touches[0];
             const deltaX = touch.clientX - startX;
             const deltaY = startY - touch.clientY;
