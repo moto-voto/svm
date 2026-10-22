@@ -5,18 +5,24 @@
   "main": "src/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/server.js"
+    "prestart": "npm run build:ui",
+    "start": "node src/server.js",
+    "build:ui": "vite build --config src/ui/vite.config.js",
+    "dev:ui": "vite --config src/ui/vite.config.js"
   },
   "keywords": [],
   "type": "module",
   "dependencies": {
     "cheerio": "^1.2.0",
     "ejs": "^7.0.2",
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "solid-js": "^1.9.17"
   },
   "devDependencies": {
-    "typescript": "^7.0.2",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.6.5"
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vite-plugin-solid": "^2.11.14"
   }
 }

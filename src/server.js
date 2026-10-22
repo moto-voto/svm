@@ -13,6 +13,13 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', join(__dirname, 'views'));
 
+// SolidJS SPA entrypoint (built by `npm run build:ui` into src/ui/dist).
+const UI_DIST = join(__dirname, 'ui', 'dist');
+app.get('/solid', (_req, res) => {
+    res.sendFile(join(UI_DIST, 'index.html'));
+});
+app.use('/solid', express.static(UI_DIST));
+
 app.get('/', async (req, res) => {
     const query = String(req.query.q || '');
     try {
