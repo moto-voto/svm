@@ -66,6 +66,7 @@ export function parseDefaultList(htmlContent, targetUrl) {
             // Check if title is valid (more than 1 character)
             if (title.length > 1) {
                 results.push({
+                    id,
                     title,
                     fullLink,
                     image: imageUrl,
