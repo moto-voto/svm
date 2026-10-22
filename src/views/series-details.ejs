@@ -139,10 +139,12 @@
                             <!-- Badges over Poster -->
                             <div class="absolute bottom-3 left-3 right-3 flex justify-between items-center">
                                 <span class="bg-black/75 backdrop-blur-md text-brand-orange text-xs font-bold px-2.5 py-1 rounded border border-brand-orange/30">
-                                    <i class="fa-solid fa-star text-xs mr-1"></i> IMDb 6.00
+                                    <!-- <i class="fa-solid fa-star text-xs mr-1"></i> -->
+                                    <!-- <i class="fa-brands fa-imdb"></i> -->
+                                    IMDb <%= locals.imdb ? locals.imdb : 'Н/Д' %>
                                 </span>
                                 <span class="bg-black/75 backdrop-blur-md text-gray-300 text-xs font-bold px-2.5 py-1 rounded border border-white/10">
-                                    HD
+                                    КП <%= locals.kinopoisk ? locals.kinopoisk : 'Н/Д' %>
                                 </span>
                             </div>
                         </div>
@@ -172,6 +174,16 @@
                             <p id="fieldOriginalName" class="text-brand-orange text-sm sm:text-base font-semibold flex items-center gap-2">
                                 <i class="fa-solid fa-film text-xs"></i>
                                 Mismatched
+                            </p>
+                        </div>
+
+                        <!-- Description Box -->
+                        <div class="bg-[#121214] rounded-xl border border-brand-cardBorder p-4">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-brand-orange mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-align-left"></i> Описание сериала
+                            </h3>
+                            <p id="fieldDescription" class="text-gray-300 text-xs sm:text-sm leading-relaxed font-normal">
+                                
                             </p>
                         </div>
 
@@ -263,16 +275,6 @@
 
                         </div>
 
-                        <!-- Description Box -->
-                        <div class="bg-[#121214] rounded-xl border border-brand-cardBorder p-4">
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-brand-orange mb-2 flex items-center gap-2">
-                                <i class="fa-solid fa-align-left"></i> Описание сериала
-                            </h3>
-                            <p id="fieldDescription" class="text-gray-300 text-xs sm:text-sm leading-relaxed font-normal">
-                                
-                            </p>
-                        </div>
-
                     </div>
                 </div>
 
@@ -284,10 +286,10 @@
     <footer class="mt-8 py-4 border-t border-brand-cardBorder text-center text-xs text-brand-textMuted bg-[#111113]">
         <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
             <div>
-                © Seasonvar Mobile UI - Карточка сериала
+                © SeasonVar Mobile (svm) 2026
             </div>
             <div class="text-brand-orange font-medium">
-                Поддержка мобильных устройств
+                svm on MotorHeat
             </div>
         </div>
     </footer>
