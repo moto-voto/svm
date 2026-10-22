@@ -37,6 +37,7 @@ export default function PlayerPage() {
     const [activePanel, setActivePanel] = createSignal(/** @type {string | null} */ (null));
     const [decoderMode, setDecoderMode] = createSignal('HW');
     const [isPlaying, setIsPlaying] = createSignal(false);
+    const [needsUnmute, setNeedsUnmute] = createSignal(false);
     const [isFullscreen, setIsFullscreen] = createSignal(false);
     const [currentTime, setCurrentTime] = createSignal(0);
     const [duration, setDuration] = createSignal(0);
@@ -89,12 +90,49 @@ export default function PlayerPage() {
         pendingSeek = startTime;
         video.src = ep.file;
         video.load();
-        if (autoPlay) video.play().catch(() => setIsPlaying(false));
+        if (autoPlay) startPlayback();
+    }
+
+    /**
+     * Start playback, working around the browser autoplay policy.
+     *
+     * Browsers only allow unmuted autoplay once the user has interacted with
+     * the page/domain. If the unmuted `play()` is rejected we fall back to
+     * muted playback (always allowed) and show an "unmute" affordance; the
+     * next user gesture then restores sound.
+     */
+    async function startPlayback() {
+        if (!video) return;
+        try {
+            video.muted = false;
+            await video.play();
+            setNeedsUnmute(false);
+        } catch (err) {
+            if (err && err.name === 'NotAllowedError') {
+                try {
+                    video.muted = true;
+                    await video.play();
+                    setNeedsUnmute(true);
+                } catch {
+                    setIsPlaying(false);
+                }
+            } else {
+                setIsPlaying(false);
+            }
+        }
+    }
+
+    /** Restore sound on the first user gesture after a blocked autoplay. */
+    function unlockAudio() {
+        if (needsUnmute() && video) {
+            video.muted = false;
+            setNeedsUnmute(false);
+        }
     }
 
     function togglePlayPause() {
         if (!video) return;
-        if (video.paused || video.ended) video.play().catch(() => setIsPlaying(false));
+        if (video.paused || video.ended) startPlayback();
         else video.pause();
         resetControlsTimer();
     }
@@ -325,6 +363,8 @@ export default function PlayerPage() {
         };
 
         document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('pointerdown', unlockAudio);
+        document.addEventListener('keydown', unlockAudio);
         document.addEventListener('fullscreenchange', onFullscreenChange);
         playerContainer?.addEventListener('touchstart', onTouchStart, { passive: true });
         playerContainer?.addEventListener('touchmove', onTouchMove, { passive: true });
@@ -333,6 +373,8 @@ export default function PlayerPage() {
 
         onCleanup(() => {
             document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('pointerdown', unlockAudio);
+            document.removeEventListener('keydown', unlockAudio);
             document.removeEventListener('fullscreenchange', onFullscreenChange);
             playerContainer?.removeEventListener('touchstart', onTouchStart);
             playerContainer?.removeEventListener('touchmove', onTouchMove);
@@ -354,7 +396,7 @@ export default function PlayerPage() {
             setSelectedSeasonIndex(current !== -1 ? current : 0);
             setSelectedTranslationIndex(0);
             setCurrentEpisodeIndex(0);
-            queueMicrotask(() => loadEpisode(0, false, 0));
+            queueMicrotask(() => loadEpisode(0, true, 0));
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -398,6 +440,21 @@ export default function PlayerPage() {
                     <div class="w-1/2 h-full cursor-pointer" />
                     <div class="w-1/2 h-full cursor-pointer" />
                 </div>
+
+                {/* Autoplay policy fallback: muted playback + tap to enable sound */}
+                <Show when={needsUnmute()}>
+                    <button
+                        type="button"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            unlockAudio();
+                        }}
+                        class="absolute left-1/2 -translate-x-1/2 top-16 z-40 flex items-center gap-2 bg-black/75 hover:bg-black/90 text-white text-xs font-semibold px-3.5 py-2 rounded-full border border-white/20 shadow-lg backdrop-blur-sm"
+                    >
+                        <i class="fa-solid fa-volume-xmark text-blue-400"></i>
+                        <span>Включить звук</span>
+                    </button>
+                </Show>
 
                 {/* Center OSD */}
                 <div
