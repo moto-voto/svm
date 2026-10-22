@@ -2,6 +2,7 @@ import { load } from 'cheerio';
 
 /**
  * @typedef SerialDescription
+ * @property {string} id
  * @property {string} title
  * @property {string} fullLink
  * @property {string | null} image
@@ -27,6 +28,7 @@ export function parseSearchResults(htmlContent, targetUrl) {
 
         let title = titleLink.text().trim().replace(/\s+/g, ' ');
         let link = titleLink.attr('href');
+        let id = (link || '').split("-")[1];        
 
         // Extract Image
         let imageSrc = $(el).find('a.pst img').attr('src');
@@ -39,6 +41,7 @@ export function parseSearchResults(htmlContent, targetUrl) {
 
         if (title && link && title.length > 1) {
             results.push({
+                id,
                 title,
                 fullLink: link.startsWith('http') ? link : `${targetUrl}/${link.replace(/^\//, '')}`,
                 image: imageSrc || null,

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seasonvar Mobile - (не)Пара / Mismatched</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            orange: '#ff9900',
+                            orangeDark: '#e68a00',
+                            bgDark: '#0f0f10',
+                            cardBg: '#1a1a1c',
+                            cardBorder: '#28282c',
+                            inputBg: '#242428',
+                            textMuted: '#9ca3af'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0d0d0e;
+            color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121214;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a2e;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff9900;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-orange selection:text-black">
+
+    <div>
+        <!-- Top Navigation Bar matching Seasonvar Header -->
+        <header class="bg-[#141416] border-b border-brand-cardBorder sticky top-0 z-50 shadow-md">
+            <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="text-brand-orange font-bold text-lg md:text-xl tracking-tight flex items-center gap-2">
+                        <i class="fa-solid font-black fa-play-circle text-brand-orange"></i>
+                        Seasonvar <span class="text-xs bg-brand-orange/20 text-brand-orange px-2 py-0.5 rounded font-semibold uppercase tracking-wider">Mobile</span>
+                    </span>
+                </div>
+                <div class="text-xs text-brand-textMuted bg-[#1d1d21] px-3 py-1.5 rounded-md border border-brand-cardBorder">
+                    <span class="text-brand-orange font-medium">ID:</span> 43004
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="max-w-4xl mx-auto px-4 py-5 md:py-8">
+            
+            <!-- Back Button Bar at the top -->
+            <div class="mb-5 flex items-center justify-between">
+                <button onclick="handleBackToList()" class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm">
+                    <i class="fa-solid fa-arrow-left text-brand-orange"></i>
+                    <span>Назад к списку</span>
+                </button>
+
+                <button onclick="toggleJsonView()" class="inline-flex items-center gap-1.5 bg-[#1a1a1d] hover:bg-[#242428] text-brand-textMuted hover:text-white text-xs font-medium px-3 py-2 rounded-lg border border-brand-cardBorder transition-all">
+                    <i class="fa-solid fa-code text-brand-orange"></i>
+                    <span id="jsonBtnText">JSON Модель</span>
+                </button>
+            </div>
+
+            <!-- JSON Preview Collapsible Panel -->
+            <div id="jsonContainer" class="hidden mb-6 bg-[#121214] border border-brand-orange/30 rounded-xl p-4 shadow-inner relative overflow-hidden">
+                <div class="flex justify-between items-center mb-2 pb-2 border-b border-brand-cardBorder">
+                    <span class="text-xs font-mono text-brand-orange font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-code"></i> Исходная модель JSON
+                    </span>
+                    <button onclick="copyJsonToClipboard()" class="text-xs text-brand-textMuted hover:text-white bg-[#222226] px-2.5 py-1 rounded border border-brand-cardBorder transition-colors">
+                        <i class="fa-regular fa-copy mr-1"></i> Копировать
+                    </button>
+                </div>
+                <pre id="jsonCode" class="font-mono text-xs text-green-400 overflow-x-auto p-2 bg-[#09090a] rounded border border-[#1f1f22] leading-relaxed"></pre>
+            </div>
+
+            <!-- Single Series Main Card -->
+            <div class="bg-brand-cardBg border border-brand-cardBorder rounded-2xl p-4 sm:p-6 shadow-2xl overflow-hidden relative">
+                
+                <!-- Card Header Tagline -->
+                <div class="flex flex-wrap items-center gap-2 mb-4 pb-3 border-b border-brand-cardBorder">
+                    <span class="bg-brand-orange text-black font-extrabold text-xs px-2.5 py-1 rounded uppercase tracking-wider">
+                        3 Сезон
+                    </span>
+                    <span class="bg-[#282830] text-gray-300 text-xs px-2.5 py-1 rounded font-medium">
+                        2024 год
+                    </span>
+                    <span class="bg-[#282830] text-gray-300 text-xs px-2.5 py-1 rounded font-medium">
+                        Комедия, Мелодрамы
+                    </span>
+                </div>
+
+                <!-- Main Grid Layout: Poster Left, Details Right -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- Left Column: Poster Image & Primary Actions -->
+                    <div class="md:col-span-4 flex flex-col items-center">
+                        <div class="relative w-full max-w-[280px] md:max-w-none aspect-[2/3] rounded-xl overflow-hidden border border-brand-cardBorder shadow-lg group bg-[#111113]">
+                            <!-- Poster Image with Fallback handling -->
+                            <img 
+                                id="seriesPoster"
+                                src="https://cdn.svstat.net/oblojka/43004.jpg" 
+                                alt="Обложка сериала" 
+                                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                onerror="this.onerror=null; this.src='https://placehold.co/400x600/1e1e24/ff9900?text=Mismatched+3'; "
+                            />
+                            <!-- Gradient Overlay at bottom of poster -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
+                            
+                            <!-- Badges over Poster -->
+                            <div class="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+                                <span class="bg-black/75 backdrop-blur-md text-brand-orange text-xs font-bold px-2.5 py-1 rounded border border-brand-orange/30">
+                                    <i class="fa-solid fa-star text-xs mr-1"></i> IMDb 6.00
+                                </span>
+                                <span class="bg-black/75 backdrop-blur-md text-gray-300 text-xs font-bold px-2.5 py-1 rounded border border-white/10">
+                                    HD
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Full Link External Watch Button -->
+                        <a 
+                            id="fullLinkBtn"
+                            href="https://seasonvar.ru/serial-43004-nePara_pswevxh-3-season.html" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            class="w-full max-w-[280px] md:max-w-none mt-4 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
+                        >
+                            <i class="fa-solid fa-play text-black text-sm"></i>
+                            <span>Смотреть онлайн</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-75 ml-1"></i>
+                        </a>
+                    </div>
+
+                    <!-- Right Column: Structured Field Details -->
+                    <div class="md:col-span-8 space-y-4">
+                        
+                        <!-- Title & Original Title -->
+                        <div>
+                            <h1 id="fieldTitle" class="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight mb-1">
+                                Сериал (не)Пара/Mismatched 3 сезон онлайн
+                            </h1>
+                            <p id="fieldOriginalName" class="text-brand-orange text-sm sm:text-base font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-film text-xs"></i>
+                                Mismatched
+                            </p>
+                        </div>
+
+                        <!-- Rating Cards Row -->
+                        <div class="grid grid-cols-2 gap-3 py-2">
+                            <div class="bg-[#121214] border border-brand-cardBorder p-3 rounded-xl flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-black text-lg">
+                                    <i class="fa-brands fa-imdb"></i>
+                                </div>
+                                <div>
+                                    <div class="text-[11px] text-brand-textMuted uppercase font-medium">IMDb Рейтинг</div>
+                                    <div id="fieldImdb" class="text-base font-bold text-white">6.00</div>
+                                </div>
+                            </div>
+
+                            <div class="bg-[#121214] border border-brand-cardBorder p-3 rounded-xl flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 font-black text-sm">
+                                    КП
+                                </div>
+                                <div>
+                                    <div class="text-[11px] text-brand-textMuted uppercase font-medium">Кинопоиск</div>
+                                    <div id="fieldKinopoisk" class="text-base font-bold text-gray-400">Н/Д</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Separate Field Item List (Key / Value Pairs) -->
+                        <div class="bg-[#121214] rounded-xl border border-brand-cardBorder divide-y divide-[#222228] text-sm">
+                            
+                            <!-- ID -->
+                            <div class="p-3 sm:px-4 flex justify-between items-center">
+                                <span class="text-brand-textMuted font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-hashtag text-xs text-brand-orange w-4"></i> ID Карточки
+                                </span>
+                                <span id="fieldId" class="font-mono text-white bg-[#1e1e22] px-2 py-0.5 rounded border border-[#2a2a30] text-xs">
+                                    43004
+                                </span>
+                            </div>
+
+                            <!-- Year -->
+                            <div class="p-3 sm:px-4 flex justify-between items-center">
+                                <span class="text-brand-textMuted font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-calendar text-xs text-brand-orange w-4"></i> Год выпуска
+                                </span>
+                                <span id="fieldYear" class="text-white font-semibold">
+                                    2024
+                                </span>
+                            </div>
+
+                            <!-- Seasons -->
+                            <div class="p-3 sm:px-4 flex justify-between items-center">
+                                <span class="text-brand-textMuted font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-layer-group text-xs text-brand-orange w-4"></i> Количество сезонов
+                                </span>
+                                <span id="fieldSeasons" class="text-white font-semibold">
+                                    3 сезона
+                                </span>
+                            </div>
+
+                            <!-- Country -->
+                            <div class="p-3 sm:px-4 flex justify-between items-center">
+                                <span class="text-brand-textMuted font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-earth-americas text-xs text-brand-orange w-4"></i> Страна / Категории
+                                </span>
+                                <span id="fieldCountry" class="text-white font-semibold text-right">
+                                    комедия, мелодрамы
+                                </span>
+                            </div>
+
+                            <!-- Genre -->
+                            <div class="p-3 sm:px-4 flex justify-between items-center">
+                                <span class="text-brand-textMuted font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-masks-theater text-xs text-brand-orange w-4"></i> Жанр
+                                </span>
+                                <span id="fieldGenre" class="text-white font-semibold text-right">
+                                    комедия, мелодрамы
+                                </span>
+                            </div>
+
+                            <!-- Full Link Display -->
+                            <div class="p-3 sm:px-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                                <span class="text-brand-textMuted font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-link text-xs text-brand-orange w-4"></i> Прямая ссылка
+                                </span>
+                                <a id="fieldFullLink" href="https://seasonvar.ru/serial-43004-nePara_pswevxh-3-season.html" target="_blank" class="text-brand-orange hover:underline text-xs truncate max-w-full sm:max-w-[280px]">
+                                    https://seasonvar.ru/serial-43004-nePara_pswevxh-3-season.html
+                                </a>
+                            </div>
+
+                        </div>
+
+                        <!-- Description Box -->
+                        <div class="bg-[#121214] rounded-xl border border-brand-cardBorder p-4">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-brand-orange mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-align-left"></i> Описание сериала
+                            </h3>
+                            <p id="fieldDescription" class="text-gray-300 text-xs sm:text-sm leading-relaxed font-normal">
+                                Сердце этой истории романтические отношения между двумя людьми, чья несовместимость на первый взгляд кажется очевидной. Димпл, талантливый технарь, чье мышление четко и структурированно, и Риши, романтик, живущий в мире фантазий и грез, устремлен его сердцем к ней. В этом переплетении двух разных миров рождается трогательная история о том, как два разных человека пытаются найти общий язык, преодолевая свои различия и противоречия. Это путь от непонимания к взаимопониманию, от отталкивания к притяжению, показывающий, что иногда любовь может расцвести даже там, где, казалось бы, для нее нет мес
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Simple Footer -->
+    <footer class="mt-8 py-4 border-t border-brand-cardBorder text-center text-xs text-brand-textMuted bg-[#111113]">
+        <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>
+                © Seasonvar Mobile UI - Карточка сериала
+            </div>
+            <div class="text-brand-orange font-medium">
+                Поддержка мобильных устройств
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interactive JavaScript Logic -->
+    <script>
+        // Data Model strictly adhering to user's specified JSON payload
+        const seriesData = {
+            "id": "43004",
+            "title": "Сериал (не)Пара/Mismatched 3 сезон онлайн",
+            "fullLink": "https://seasonvar.ru/serial-43004-nePara_pswevxh-3-season.html",
+            "image": "//cdn.svstat.net/oblojka/43004.jpg",
+            "description": "Сердце этой истории романтические отношения между двумя людьми, чья несовместимость на первый взгляд кажется очевидной. Димпл, талантливый технарь, чье мышление четко и структурированно, и Риши, романтик, живущий в мире фантазий и грез, устремлен его сердцем к ней. В этом переплетении двух разных миров рождается трогательная история о том, как два разных человека пытаются найти общий язык, преодолевая свои различия и противоречия. Это путь от непонимания к взаимопониманию, от отталкивания к притяжению, показывающий, что иногда любовь может расцвести даже там, где, казалось бы, для нее нет мес",
+            "year": "2024",
+            "country": "комедия, мелодрамы",
+            "genre": "комедия, мелодрамы",
+            "imdb": "6.00",
+            "kinopoisk": null,
+            "originalName": "Mismatched",
+            "seasons": 3
+        };
+
+        // Render functions on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderSeriesData(seriesData);
+        });
+
+        function renderSeriesData(data) {
+            // Populate poster
+            const posterImg = document.getElementById('seriesPoster');
+            if (data.image) {
+                // Ensure protocol prefix if relative scheme
+                const imgUrl = data.image.startsWith('//') ? 'https:' + data.image : data.image;
+                posterImg.src = imgUrl;
+            }
+
+            // Populate text fields individually
+            document.getElementById('fieldTitle').textContent = data.title || '—';
+            document.getElementById('fieldOriginalName').textContent = data.originalName || '—';
+            document.getElementById('fieldId').textContent = data.id || '—';
+            document.getElementById('fieldYear').textContent = data.year || '—';
+            document.getElementById('fieldSeasons').textContent = data.seasons ? `${data.seasons} сезона` : '—';
+            document.getElementById('fieldCountry').textContent = data.country || '—';
+            document.getElementById('fieldGenre').textContent = data.genre || '—';
+            document.getElementById('fieldImdb').textContent = data.imdb ? data.imdb : 'Н/Д';
+            document.getElementById('fieldKinopoisk').textContent = data.kinopoisk ? data.kinopoisk : 'Н/Д';
+            document.getElementById('fieldDescription').textContent = data.description || 'Описание отсутствует.';
+
+            // Populate Links
+            const fullLinkElem = document.getElementById('fieldFullLink');
+            const fullLinkBtn = document.getElementById('fullLinkBtn');
+            if (data.fullLink) {
+                fullLinkElem.href = data.fullLink;
+                fullLinkElem.textContent = data.fullLink;
+                fullLinkBtn.href = data.fullLink;
+            } else {
+                fullLinkElem.textContent = '—';
+                fullLinkBtn.classList.add('pointer-events-none', 'opacity-50');
+            }
+
+            // Populate raw JSON code element
+            document.getElementById('jsonCode').textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Action for top 'Back to list' button
+        function handleBackToList() {
+            showNotification('Переход назад к списку всех сериалов...');
+        }
+
+        // Toggle JSON inspection panel
+        function toggleJsonView() {
+            const container = document.getElementById('jsonContainer');
+            const btnText = document.getElementById('jsonBtnText');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                btnText.textContent = 'Скрыть JSON';
+            } else {
+                container.classList.add('hidden');
+                btnText.textContent = 'JSON Модель';
+            }
+        }
+
+        // Copy raw JSON to clipboard without alert()
+        function copyJsonToClipboard() {
+            const jsonText = JSON.stringify(seriesData, null, 2);
+            
+            // Clipboard standard fallback
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = jsonText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            showNotification('JSON успешно скопирован в буфер обмена!');
+        }
+
+        // In-app message toast banner
+        function showNotification(message) {
+            const existingToast = document.getElementById('customToast');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'customToast';
+            toast.className = 'fixed bottom-5 right-5 bg-brand-orange text-black font-semibold text-xs py-2.5 px-4 rounded-xl shadow-2xl z-50 flex items-center gap-2 transform transition-all duration-300 translate-y-full opacity-0';
+            toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${message}</span>`;
+            
+            document.body.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-full', 'opacity-0');
+            }, 10);
+
+            // Dismiss after 3s
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

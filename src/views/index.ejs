@@ -324,7 +324,7 @@
 
             createCardElement(item, index) {
                 const card = document.createElement('a');
-                card.href = `/series?url=${encodeURIComponent(item.fullLink)}`;
+                card.href = `/series-details?url=${encodeURIComponent(item.fullLink)}`;
                 card.rel = 'noopener noreferrer';
                 card.className = 'poster-card';
 

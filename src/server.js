@@ -5,6 +5,7 @@ import { apiSearch } from './api/api-search.js';
 import { apiPlaylist } from './api/api-playlist.js';
 import { apiSeries } from './api/api-series.js';
 import { apiSeriesList } from './api/api-series-list.js';
+import { apiSeriesDetails } from './api/api-series-details.js';
 
 const __dirname = import.meta.dirname;
 
@@ -42,6 +43,20 @@ app.get('/series', async (req, res) => {
         res.render('player', series);
     } catch (err) {
         res.render('player', { error:err });
+    }
+});
+
+app.get('/series-details', async (req, res) => {
+    const seriesUrl = String(req.query.url || '');
+    if (!seriesUrl) {
+        return res.redirect('/');
+    }
+
+    try {
+        const series = await apiSeriesDetails(seriesUrl);
+        res.render('series-details', series);
+    } catch (err) {
+        res.render('series-details', { error:err });
     }
 });
 
@@ -91,6 +106,21 @@ app.get('/api/series', async (req, res) => {
         res.json(series);
     } catch (err) {
         res.json({ error: 'Failed to fetch series:' + (err instanceof Error ? err.message : String(err)) });
+    }
+});
+
+app.get('/api/series-details', async (req, res) => {
+    const url = String(req.query.url || '');
+
+    if (!url) {
+        res.json({ error: 'Series URL is required' });
+    }
+
+    try {
+        const series = await apiSeriesDetails(url);
+        res.json(series);
+    } catch (err) {
+        res.json({ error: 'Failed to fetch series info:' + (err instanceof Error ? err.message : String(err)) });
     }
 });
 
