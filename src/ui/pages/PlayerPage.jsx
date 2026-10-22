@@ -1,20 +1,8 @@
 import { createSignal, onMount, onCleanup, For, Show } from 'solid-js';
 import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeries } from '../api.js';
+import { cleanTitle, formatTime } from '../utils.js';
 import './player.css';
-
-/** Strip a trailing dangling parenthesis from raw titles. */
-const cleanTitle = (rawTitle) => (rawTitle || '').replace(/\s*\(\s*$/, '').trim();
-
-/** Format seconds as MM:SS or HH:MM:SS. */
-function formatTime(seconds) {
-    if (isNaN(seconds) || seconds === Infinity) return '00:00';
-    const pad = (num) => String(num).padStart(2, '0');
-    const sec = Math.floor(seconds % 60);
-    const min = Math.floor((seconds / 60) % 60);
-    const hrs = Math.floor(seconds / 3600);
-    return hrs > 0 ? `${pad(hrs)}:${pad(min)}:${pad(sec)}` : `${pad(min)}:${pad(sec)}`;
-}
 
 export default function PlayerPage() {
     const [searchParams] = useSearchParams();

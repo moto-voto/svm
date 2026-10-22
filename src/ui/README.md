@@ -27,7 +27,27 @@ Pages:
 npm run build:ui   # production build -> src/ui/dist (served at the root)
 npm run dev:ui     # Vite dev server with HMR
 npm start          # builds the UI (prestart) then runs Express
+
+npm test           # run all unit tests (node:test)
+npm run test:be    # backend tests only
+npm run test:fe    # frontend tests only
 ```
+
+## Tests
+
+Unit tests use the built-in Node.js test runner (`node:test`) and live under
+`tests/`, split into `tests/be` and `tests/fe`. No extra test dependencies.
+
+- `tests/be` — parser and API modules (`src/parser`, `src/api`, `src/common.js`)
+  with fixtures and a small `fetch` stub.
+- `tests/fe` — pure frontend modules: `src/ui/api.js`, `src/ui/utils.js` and
+  `src/ui/grid-layout.js` (the virtualized-grid math).
+
+Note: Solid *component* tests would require a DOM environment plus a JSX
+transform (e.g. `@solidjs/testing-library` + `happy-dom`), so frontend logic is
+kept in dependency-free modules and unit tested directly. Browser-dependent
+component behaviour is covered by the production build and manual checks.
+
 
 ## Routes (client-side)
 
