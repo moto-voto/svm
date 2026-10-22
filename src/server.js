@@ -9,60 +9,9 @@ import { apiSeriesDetails } from './api/api-series-details.js';
 
 const __dirname = import.meta.dirname;
 
-
 const app = express();
-app.set('view engine', 'ejs');
-app.set('views', join(__dirname, 'views'));
 
-// SolidJS SPA entrypoint (built by `npm run build:ui` into src/ui/dist).
-const UI_DIST = join(__dirname, 'ui', 'dist');
-app.get('/solid', (_req, res) => {
-    res.sendFile(join(UI_DIST, 'index.html'));
-});
-app.use('/solid', express.static(UI_DIST));
-// SPA fallback: unknown /solid/* paths render the app so the client router can handle them.
-app.use('/solid', (_req, res) => {
-    res.sendFile(join(UI_DIST, 'index.html'));
-});
-
-app.get('/', async (req, res) => {
-    const query = String(req.query.q || '');
-    try {
-        const results = await apiSearch(query);
-        res.render('index', { results, query: query, error: null });
-    } catch (err) {
-        const error = 'Failed to fetch search results.' + (err instanceof Error ? err.message : String(err));
-        res.render('index', { results: [], query: query, error });
-    }
-});
-
-app.get('/series', async (req, res) => {
-    const seriesUrl = String(req.query.url || '');
-    if (!seriesUrl) {
-        return res.redirect('/');
-    }
-
-    try {
-        const series = await apiSeries(seriesUrl);
-        res.render('player', series);
-    } catch (err) {
-        res.render('player', { error:err });
-    }
-});
-
-app.get('/series-details', async (req, res) => {
-    const seriesUrl = String(req.query.url || '');
-    if (!seriesUrl) {
-        return res.redirect('/');
-    }
-
-    try {
-        const series = await apiSeriesDetails(seriesUrl);
-        res.render('series-details', series);
-    } catch (err) {
-        res.render('series-details', { error:err });
-    }
-});
+// ---- API ----
 
 app.get('/api/search', async (req, res) => {
     const query = String(req.query.q || '');
@@ -87,7 +36,7 @@ app.get('/api/playlist', async (req, res) => {
     const seriesUrl = String(req.query.url || '');
 
     if (!seriesUrl) {
-        res.json({ error: 'Series URL is required' });
+        return res.json({ error: 'Series URL is required' });
     }
 
     try {
@@ -102,7 +51,7 @@ app.get('/api/series', async (req, res) => {
     const seriesUrl = String(req.query.url || '');
 
     if (!seriesUrl) {
-        res.json({ error: 'Series URL is required' });
+        return res.json({ error: 'Series URL is required' });
     }
 
     try {
@@ -117,7 +66,7 @@ app.get('/api/series-details', async (req, res) => {
     const url = String(req.query.url || '');
 
     if (!url) {
-        res.json({ error: 'Series URL is required' });
+        return res.json({ error: 'Series URL is required' });
     }
 
     try {
@@ -126,6 +75,15 @@ app.get('/api/series-details', async (req, res) => {
     } catch (err) {
         res.json({ error: 'Failed to fetch series info:' + (err instanceof Error ? err.message : String(err)) });
     }
+});
+
+// ---- SolidJS SPA (built by `npm run build:ui` into src/ui/dist) ----
+
+const UI_DIST = join(__dirname, 'ui', 'dist');
+app.use(express.static(UI_DIST));
+// SPA fallback: unknown paths render the app so the client router can handle them.
+app.use((_req, res) => {
+    res.sendFile(join(UI_DIST, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;

@@ -7,8 +7,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
     root: __dirname,
-    // Served by Express under /solid so built asset URLs resolve correctly.
-    base: '/solid/',
+    // Served by Express at the site root.
+    base: '/',
     plugins: [solid()],
     build: {
         outDir: join(__dirname, 'dist'),

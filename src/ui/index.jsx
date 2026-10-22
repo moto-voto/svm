@@ -10,7 +10,7 @@ if (!root) throw new Error('Root element #root not found');
 
 render(
     () => (
-        <Router base="/solid">
+        <Router base="/">
             <Route path="/" component={SearchPage} />
             <Route path="/series" component={PlayerPage} />
             <Route path="/series-details" component={SeriesDetailsPage} />

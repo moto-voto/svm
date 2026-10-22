@@ -1,17 +1,13 @@
 # Seasonvar Mobile UI (SolidJS)
 
-This folder is the SolidJS single-page app, served by Express at `/solid`.
-It is a rewrite of the server-rendered EJS views. The EJS views are kept
-unchanged while the migration is in progress.
+This folder is the SolidJS single-page app, served by Express at the site root.
+It replaces the former server-rendered EJS views (`src/views` has been removed).
 
-Migrated views:
+Pages:
 
-- `src/views/index.ejs` -> `pages/SearchPage.jsx`
-- `src/views/player.ejs` -> `pages/PlayerPage.jsx`
-- `src/views/series-details.ejs` -> `pages/SeriesDetailsPage.jsx`
-
-Note: `src/views/series.ejs` is not referenced by `src/server.js` (dead view),
-so it was not migrated.
+- `pages/SearchPage.jsx` — virtualized poster grid (formerly `index.ejs`)
+- `pages/PlayerPage.jsx` — MX-Player style video player (formerly `player.ejs`)
+- `pages/SeriesDetailsPage.jsx` — series details card (formerly `series-details.ejs`)
 
 ## Tooling decision
 
@@ -28,31 +24,28 @@ so it was not migrated.
 ## Commands
 
 ```bash
-npm run build:ui   # production build -> src/ui/dist (served at /solid)
+npm run build:ui   # production build -> src/ui/dist (served at the root)
 npm run dev:ui     # Vite dev server with HMR
-npm start          # Express; /solid serves the built app
+npm start          # builds the UI (prestart) then runs Express
 ```
 
-Run `npm run build:ui` after changing anything under `src/ui` before starting
-the server, otherwise `/solid` serves a stale bundle.
+## Routes (client-side)
 
-## Routes (client-side, under the `/solid` base)
+| Route              | Page                | Backend API                 |
+| ------------------ | ------------------- | --------------------------- |
+| `/`                | SearchPage          | `/api/search?q=`            |
+| `/series`          | PlayerPage          | `/api/series?url=`          |
+| `/series-details`  | SeriesDetailsPage   | `/api/series-details?url=`  |
 
-| Route             | Page                | Backend API                 |
-| ----------------- | ------------------- | --------------------------- |
-| `/solid/`         | SearchPage          | `/api/search?q=`            |
-| `/solid/series`   | PlayerPage          | `/api/series?url=`          |
-| `/solid/series-details` | SeriesDetailsPage | `/api/series-details?url=` |
-
-Express serves `dist/index.html` for any unknown `/solid/*` path so the client
-router can resolve deep links.
+Express serves `dist/index.html` for any unknown path so the client router can
+resolve deep links.
 
 ## Layout
 
 ```
 src/ui/
 ├── index.html                  # Vite entry (Tailwind, FontAwesome, Inter)
-├── index.jsx                   # Router setup (base="/solid")
+├── index.jsx                   # Router setup
 ├── api.js                      # backend client
 ├── styles.css                  # global styles (search page / shared)
 ├── pages/
