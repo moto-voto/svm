@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js';
+import { normalizeQuery } from '../utils.js';
 
 /**
  * Top header bar with the app title, live render stats and the search form.
@@ -15,7 +16,7 @@ export default function Header(props) {
     /** @param {SubmitEvent} event */
     const handleSubmit = (event) => {
         event.preventDefault();
-        props.onSearch(value().trim());
+        props.onSearch(normalizeQuery(value()));
     };
 
     return (

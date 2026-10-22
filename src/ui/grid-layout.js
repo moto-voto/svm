@@ -81,3 +81,12 @@ export function positionFor(layout, index) {
         transform: `translate3d(${col * (layout.cardWidth + layout.gap)}px, ${row * layout.rowHeight}px, 0)`,
     };
 }
+
+/**
+ * Human-readable stats label for the header badge.
+ * @param {number} mounted number of currently mounted nodes
+ * @param {number} total total number of items
+ */
+export function formatGridStats(mounted, total) {
+    return total === 0 ? '0 / 0' : `${mounted} visible (${total.toLocaleString()} total)`;
+}

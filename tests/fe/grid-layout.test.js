@@ -8,6 +8,7 @@ import {
     computeLayout,
     computeVisibleIndices,
     positionFor,
+    formatGridStats,
 } from '../../src/ui/grid-layout.js';
 
 test('cardMetrics picks breakpoints by window width', () => {
@@ -114,4 +115,15 @@ test('positionFor lays cards out on a grid', () => {
 
 test('ASPECT_RATIO matches the poster ratio', () => {
     assert.ok(Math.abs(ASPECT_RATIO - 2 / 3.1) < 1e-12);
+});
+
+test('formatGridStats renders the empty state', () => {
+    assert.equal(formatGridStats(0, 0), '0 / 0');
+});
+
+test('formatGridStats reports mounted vs total', () => {
+    assert.equal(
+        formatGridStats(24, 1000),
+        `24 visible (${(1000).toLocaleString()} total)`
+    );
 });

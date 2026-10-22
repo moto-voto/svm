@@ -2,6 +2,23 @@ import { createSignal, onMount, onCleanup, For, Show } from 'solid-js';
 import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeries } from '../api.js';
 import { cleanTitle, formatTime } from '../utils.js';
+import { resolveGesture, resetGestureState, GESTURE_TYPES } from '../gestures.js';
+import {
+    progressPercent,
+    seekTimeFromPercent,
+    shouldFallbackToMuted,
+    findCurrentSeasonIndex,
+    clampEpisodeIndex,
+    episodeCount,
+    brightnessOverlayColor,
+    nextDecoderMode,
+    resolveTapAction,
+    TAP_ACTIONS,
+    resolveKeyAction,
+    KEY_ACTIONS,
+    SEEK_STEP_SECONDS,
+    VOLUME_STEP,
+} from '../player.js';
 import './player.css';
 
 export default function PlayerPage() {
@@ -45,7 +62,7 @@ export default function PlayerPage() {
     const currentEpisode = () => activePlaylist()[currentEpisodeIndex()];
     const currentSeason = () => seasons()[selectedSeasonIndex()];
     const currentTranslationName = () => translations()[selectedTranslationIndex()]?.translation || '';
-    const progressPct = () => (duration() > 0 ? (currentTime() / duration()) * 100 : 0);
+    const progressPct = () => progressPercent(currentTime(), duration());
 
     // ---- OSD / loader / controls visibility helpers ----
 
@@ -96,7 +113,7 @@ export default function PlayerPage() {
             await video.play();
             setNeedsUnmute(false);
         } catch (err) {
-            if (err && err.name === 'NotAllowedError') {
+            if (shouldFallbackToMuted(err)) {
                 try {
                     video.muted = true;
                     await video.play();
@@ -169,8 +186,7 @@ export default function PlayerPage() {
         try {
             const series = await fetchSeries(target.link);
             setPayload(series);
-            const current = series.seasons.findIndex((s) => s.isCurrent);
-            setSelectedSeasonIndex(current !== -1 ? current : index);
+            setSelectedSeasonIndex(findCurrentSeasonIndex(series.seasons, index));
             setSelectedTranslationIndex(0);
             setCurrentEpisodeIndex(0);
             queueMicrotask(() => loadEpisode(0, true, 0));
@@ -187,7 +203,7 @@ export default function PlayerPage() {
         const resumeTime = video?.currentTime || 0;
         setSelectedTranslationIndex(index);
         const list = translations()[index]?.plist || [];
-        const epIdx = currentEpisodeIndex() >= list.length ? 0 : currentEpisodeIndex();
+        const epIdx = clampEpisodeIndex(currentEpisodeIndex(), list.length);
         loadEpisode(epIdx, video ? !video.paused : true, resumeTime);
     }
 
@@ -208,13 +224,14 @@ export default function PlayerPage() {
     }
 
     function onGestureClick() {
-        if (activePanel()) {
-            closePanels();
-            return;
-        }
-        if (isLocked()) return;
-        if (!controlsVisible()) resetControlsTimer();
-        else hideControls();
+        const action = resolveTapAction({
+            panelOpen: Boolean(activePanel()),
+            locked: isLocked(),
+            controlsVisible: controlsVisible(),
+        });
+        if (action === TAP_ACTIONS.CLOSE_PANEL) closePanels();
+        else if (action === TAP_ACTIONS.SHOW_CONTROLS) resetControlsTimer();
+        else if (action === TAP_ACTIONS.HIDE_CONTROLS) hideControls();
     }
 
     // ---- Video events ----
@@ -235,7 +252,7 @@ export default function PlayerPage() {
     function onSeekInput(event) {
         if (!video || !(duration() > 0)) return;
         const pct = Number(event.currentTarget.value);
-        video.currentTime = (pct / 100) * duration();
+        video.currentTime = seekTimeFromPercent(pct, duration());
         setCurrentTime(video.currentTime);
     }
 
@@ -245,36 +262,35 @@ export default function PlayerPage() {
         // Keyboard shortcuts
         const onKeyDown = (event) => {
             if (isLocked() || !video) return;
-            switch (event.key.toLowerCase()) {
-                case ' ':
-                case 'k':
+            switch (resolveKeyAction(event.key)) {
+                case KEY_ACTIONS.TOGGLE_PLAY:
                     togglePlayPause();
                     break;
-                case 'f':
+                case KEY_ACTIONS.FULLSCREEN:
                     toggleFullscreen();
                     break;
-                case 'n':
+                case KEY_ACTIONS.NEXT:
                     playNextEpisode();
                     break;
-                case 'p':
+                case KEY_ACTIONS.PREV:
                     playPrevEpisode();
                     break;
-                case 'arrowleft':
-                    video.currentTime = Math.max(0, video.currentTime - 5);
-                    showOSD('fa-backward', '-5s');
+                case KEY_ACTIONS.SEEK_BACK:
+                    video.currentTime = Math.max(0, video.currentTime - SEEK_STEP_SECONDS);
+                    showOSD('fa-backward', `-${SEEK_STEP_SECONDS}s`);
                     resetControlsTimer();
                     break;
-                case 'arrowright':
-                    video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
-                    showOSD('fa-forward', '+5s');
+                case KEY_ACTIONS.SEEK_FORWARD:
+                    video.currentTime = Math.min(video.duration || 0, video.currentTime + SEEK_STEP_SECONDS);
+                    showOSD('fa-forward', `+${SEEK_STEP_SECONDS}s`);
                     resetControlsTimer();
                     break;
-                case 'arrowup':
-                    video.volume = Math.min(1, video.volume + 0.1);
+                case KEY_ACTIONS.VOLUME_UP:
+                    video.volume = Math.min(1, video.volume + VOLUME_STEP);
                     showOSD('fa-volume-high', `${Math.round(video.volume * 100)}%`);
                     break;
-                case 'arrowdown':
-                    video.volume = Math.max(0, video.volume - 0.1);
+                case KEY_ACTIONS.VOLUME_DOWN:
+                    video.volume = Math.max(0, video.volume - VOLUME_STEP);
                     showOSD('fa-volume-low', `${Math.round(video.volume * 100)}%`);
                     break;
             }
@@ -289,8 +305,7 @@ export default function PlayerPage() {
         let startY = 0;
         let startVal = 0;
         let swiping = false;
-        let horizontal = false;
-        let seekStart = 0;
+        let gestureState = resetGestureState();
 
         const onTouchStart = (event) => {
             if (isLocked() || !playerContainer) return;
@@ -304,7 +319,7 @@ export default function PlayerPage() {
             startX = touch.clientX;
             startY = touch.clientY;
             swiping = true;
-            horizontal = false;
+            gestureState = resetGestureState();
             if (x < rect.width / 2) {
                 activeSide = 'left';
                 startVal = brightness();
@@ -317,40 +332,39 @@ export default function PlayerPage() {
         const onTouchMove = (event) => {
             if (!swiping || isLocked() || activePanel() || !video || !playerContainer) return;
             const touch = event.touches[0];
-            const deltaX = touch.clientX - startX;
-            const deltaY = startY - touch.clientY;
 
-            if (!horizontal && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 20) {
-                horizontal = true;
-                seekStart = video.currentTime;
-            }
+            const result = resolveGesture(gestureState, {
+                locked: isLocked(),
+                panelOpen: Boolean(activePanel()),
+                startedInScroller: false,
+                side: activeSide,
+                startValue: startVal,
+                startX,
+                startY,
+                currentX: touch.clientX,
+                currentY: touch.clientY,
+                width: playerContainer.clientWidth,
+                currentTime: video.currentTime,
+                duration: video.duration || 0,
+            });
+            gestureState = result.state;
 
-            if (horizontal) {
-                const seekDelta = (deltaX / playerContainer.clientWidth) * 90;
-                const target = Math.max(0, Math.min(video.duration || 0, seekStart + seekDelta));
-                video.currentTime = target;
-                const sign = seekDelta >= 0 ? '+' : '';
-                showOSD('fa-arrow-right-arrow-left', formatTime(target), `${sign}${Math.round(seekDelta)}s`);
-                return;
-            }
-
-            const sensitivity = 0.005;
-            if (activeSide === 'left') {
-                const newBrightness = Math.max(0.2, Math.min(1, startVal + deltaY * sensitivity));
-                setBrightness(newBrightness);
-                showOSD('fa-sun', `${Math.round(newBrightness * 100)}%`, 'Brightness');
-            } else if (activeSide === 'right') {
-                const newVolume = Math.max(0, Math.min(1, startVal + deltaY * sensitivity));
-                video.volume = newVolume;
-                const pct = Math.round(newVolume * 100);
-                const icon = pct === 0 ? 'fa-volume-mute' : pct > 50 ? 'fa-volume-high' : 'fa-volume-low';
-                showOSD(icon, `${pct}%`, 'Volume');
+            if (result.type === GESTURE_TYPES.SEEK) {
+                video.currentTime = result.time;
+                const sign = result.delta >= 0 ? '+' : '';
+                showOSD('fa-arrow-right-arrow-left', formatTime(result.time), `${sign}${Math.round(result.delta)}s`);
+            } else if (result.type === GESTURE_TYPES.BRIGHTNESS) {
+                setBrightness(result.value);
+                showOSD('fa-sun', `${result.percent}%`, 'Brightness');
+            } else if (result.type === GESTURE_TYPES.VOLUME) {
+                video.volume = result.value;
+                showOSD(result.icon, `${result.percent}%`, 'Volume');
             }
         };
 
         const onTouchEnd = () => {
             swiping = false;
-            horizontal = false;
+            gestureState = resetGestureState();
             activeSide = null;
         };
 
@@ -384,8 +398,7 @@ export default function PlayerPage() {
         try {
             const series = await fetchSeries(seriesUrl);
             setPayload(series);
-            const current = series.seasons.findIndex((s) => s.isCurrent);
-            setSelectedSeasonIndex(current !== -1 ? current : 0);
+            setSelectedSeasonIndex(findCurrentSeasonIndex(series.seasons, 0));
             setSelectedTranslationIndex(0);
             setCurrentEpisodeIndex(0);
             queueMicrotask(() => loadEpisode(0, true, 0));
@@ -424,7 +437,7 @@ export default function PlayerPage() {
                 <div
                     id="brightness-overlay"
                     class="absolute inset-0 z-10"
-                    style={{ 'background-color': `rgba(0, 0, 0, ${1 - brightness()})` }}
+                    style={{ 'background-color': brightnessOverlayColor(brightness()) }}
                 />
 
                 {/* Gesture Layer */}
@@ -538,7 +551,7 @@ export default function PlayerPage() {
                                 type="button"
                                 class="px-2 py-0.5 border border-white/40 text-xs font-bold rounded hover:bg-white/10 text-gray-200"
                                 onClick={() => {
-                                    const next = decoderMode() === 'HW' ? 'SW' : 'HW';
+                                    const next = nextDecoderMode(decoderMode());
                                     setDecoderMode(next);
                                     showOSD('fa-microchip', `${next} Decoder`);
                                 }}
@@ -699,10 +712,7 @@ export default function PlayerPage() {
                                 <For each={seasons()}>
                                     {(season, index) => {
                                         const active = () => index() === selectedSeasonIndex();
-                                        const epCount = () =>
-                                            active()
-                                                ? translations().reduce((sum, t) => sum + (t.plist?.length || 0), 0)
-                                                : 0;
+                                        const epCount = () => (active() ? episodeCount(translations()) : 0);
                                         return (
                                             <div
                                                 class="flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm"

@@ -1,12 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cleanTitle, formatTime } from '../../src/ui/utils.js';
+import { cleanTitle, formatTime, clamp, normalizeQuery } from '../../src/ui/utils.js';
 
 test('cleanTitle trims and strips a trailing dangling parenthesis', () => {
     assert.equal(cleanTitle('  Season 1 (  '), 'Season 1');
     assert.equal(cleanTitle('Season 2 ('), 'Season 2');
     assert.equal(cleanTitle('Season 3'), 'Season 3');
+});
+
+test('clamp keeps values in range', () => {
+    assert.equal(clamp(5, 0, 10), 5);
+    assert.equal(clamp(-1, 0, 10), 0);
+    assert.equal(clamp(11, 0, 10), 10);
+    assert.equal(clamp(0.3, 0.2, 1), 0.3);
+});
+
+test('normalizeQuery trims and tolerates empty input', () => {
+    assert.equal(normalizeQuery('  hello  '), 'hello');
+    assert.equal(normalizeQuery(''), '');
+    assert.equal(normalizeQuery(null), '');
+    assert.equal(normalizeQuery(undefined), '');
 });
 
 test('cleanTitle tolerates empty / missing input', () => {

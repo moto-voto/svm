@@ -1,6 +1,7 @@
 import { createSignal, createEffect, onMount, onCleanup, Show } from 'solid-js';
 import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeriesDetails } from '../api.js';
+import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating } from '../series-details.js';
 
 export default function SeriesDetailsPage() {
     const [searchParams] = useSearchParams();
@@ -45,14 +46,11 @@ export default function SeriesDetailsPage() {
     createEffect(() => {
         const image = details()?.image;
         if (image) {
-            setPosterSrc(image.startsWith('//') ? `https:${image}` : image);
+            setPosterSrc(normalizeImageUrl(image));
         }
     });
 
-    const fallbackPoster = () => {
-        const title = details()?.title || 'Series';
-        return `https://placehold.co/400x600/1e1e24/ff9900?text=${encodeURIComponent(title)}`;
-    };
+    const fallbackPoster = () => buildPosterFallback(details()?.title);
 
     const copyJson = async () => {
         const text = JSON.stringify(details(), null, 2);
@@ -181,10 +179,10 @@ export default function SeriesDetailsPage() {
                                         {/* Badges over Poster */}
                                         <div class="absolute bottom-3 left-3 right-3 flex justify-between items-center">
                                             <span class="bg-black/75 backdrop-blur-md text-brand-orange text-xs font-bold px-2.5 py-1 rounded border border-brand-orange/30">
-                                                IMDb {details()?.imdb || 'Н/Д'}
+                                                IMDb {formatRating(details()?.imdb)}
                                             </span>
                                             <span class="bg-black/75 backdrop-blur-md text-gray-300 text-xs font-bold px-2.5 py-1 rounded border border-white/10">
-                                                КП {details()?.kinopoisk || 'Н/Д'}
+                                                КП {formatRating(details()?.kinopoisk)}
                                             </span>
                                         </div>
                                     </div>
@@ -241,7 +239,7 @@ export default function SeriesDetailsPage() {
                                             </div>
                                             <div>
                                                 <div class="text-[11px] text-brand-textMuted uppercase font-medium">IMDb Рейтинг</div>
-                                                <div class="text-base font-bold text-white">{details()?.imdb || 'Н/Д'}</div>
+                                                <div class="text-base font-bold text-white">{formatRating(details()?.imdb)}</div>
                                             </div>
                                         </div>
 
@@ -251,7 +249,7 @@ export default function SeriesDetailsPage() {
                                             </div>
                                             <div>
                                                 <div class="text-[11px] text-brand-textMuted uppercase font-medium">Кинопоиск</div>
-                                                <div class="text-base font-bold text-gray-400">{details()?.kinopoisk || 'Н/Д'}</div>
+                                                <div class="text-base font-bold text-gray-400">{formatRating(details()?.kinopoisk)}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -279,7 +277,7 @@ export default function SeriesDetailsPage() {
                                                 <i class="fa-solid fa-layer-group text-xs text-brand-orange w-4"></i> Количество сезонов
                                             </span>
                                             <span class="text-white font-semibold">
-                                                {details()?.seasons ? `${details()?.seasons} сезона` : '—'}
+                                                {formatSeasonsLabel(details()?.seasons)}
                                             </span>
                                         </div>
 

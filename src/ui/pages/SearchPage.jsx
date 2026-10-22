@@ -3,10 +3,11 @@ import { useSearchParams } from '@solidjs/router';
 import Header from '../components/Header.jsx';
 import VirtualGrid from '../components/VirtualGrid.jsx';
 import { searchSeries } from '../api.js';
+import { normalizeQuery } from '../utils.js';
 
 export default function SearchPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const initialQuery = String(searchParams.q || '');
+    const initialQuery = normalizeQuery(String(searchParams.q || ''));
 
     const [items, setItems] = createSignal(
         /** @type {import('../../parser/search.js').SerialDescription[]} */ ([])

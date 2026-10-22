@@ -1,6 +1,6 @@
 import { createSignal, createMemo, createEffect, onMount, onCleanup, For } from 'solid-js';
 import { A } from '@solidjs/router';
-import { computeLayout, computeVisibleIndices, positionFor } from '../grid-layout.js';
+import { computeLayout, computeVisibleIndices, positionFor, formatGridStats } from '../grid-layout.js';
 
 /**
  * Windowed / virtualized poster grid. Only the DOM nodes near the viewport are
@@ -54,9 +54,7 @@ export default function VirtualGrid(props) {
 
     // Keep the header stats in sync with what is actually mounted.
     createEffect(() => {
-        const total = props.items.length;
-        const mounted = visibleIndices().length;
-        props.onStats?.(total === 0 ? '0 / 0' : `${mounted} visible (${total.toLocaleString()} total)`);
+        props.onStats?.(formatGridStats(visibleIndices().length, props.items.length));
     });
 
     // A new result set should start from the top of the page.

@@ -2,6 +2,16 @@
  * Small pure helpers shared by the UI (see `pages/PlayerPage.jsx`).
  */
 
+/** Clamp `value` into the inclusive `[min, max]` range. */
+export function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
+/** Normalize a user-entered search query (null/undefined safe). */
+export function normalizeQuery(value) {
+    return (value ?? '').trim();
+}
+
 /** Strip a trailing dangling parenthesis from raw titles. */
 export function cleanTitle(rawTitle) {
     return (rawTitle || '').replace(/\s*\(\s*$/, '').trim();

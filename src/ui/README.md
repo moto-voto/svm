@@ -40,8 +40,13 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
 
 - `tests/be` — parser and API modules (`src/parser`, `src/api`, `src/common.js`)
   with fixtures and a small `fetch` stub.
-- `tests/fe` — pure frontend modules: `src/ui/api.js`, `src/ui/utils.js` and
-  `src/ui/grid-layout.js` (the virtualized-grid math).
+- `tests/fe` — the dependency-free frontend modules:
+  - `src/ui/api.js` (backend client)
+  - `src/ui/utils.js` (`clamp`, `normalizeQuery`, `cleanTitle`, `formatTime`)
+  - `src/ui/grid-layout.js` (virtualized-grid math + stats label)
+  - `src/ui/gestures.js` (`resolveGesture` touch decision logic)
+  - `src/ui/player.js` (progress/seek, tap/keyboard decisions, index helpers)
+  - `src/ui/series-details.js` (poster/rating/label formatting)
 
 Note: Solid *component* tests would require a DOM environment plus a JSX
 transform (e.g. `@solidjs/testing-library` + `happy-dom`), so frontend logic is
@@ -67,6 +72,11 @@ src/ui/
 ├── index.html                  # Vite entry (Tailwind, FontAwesome, Inter)
 ├── index.jsx                   # Router setup
 ├── api.js                      # backend client
+├── utils.js                    # clamp, normalizeQuery, cleanTitle, formatTime
+├── gestures.js                 # resolveGesture (touch decision logic)
+├── player.js                   # player display/index/keyboard/tap helpers
+├── series-details.js           # series-details display helpers
+├── grid-layout.js              # virtualized-grid layout math
 ├── styles.css                  # global styles (search page / shared)
 ├── pages/
 │   ├── SearchPage.jsx          # virtualized poster grid
@@ -77,3 +87,11 @@ src/ui/
     ├── Header.jsx              # header, search form, live stats
     └── VirtualGrid.jsx         # virtualized/windowed poster grid
 ```
+
+## Why logic lives in plain `.js` modules
+
+Component behaviour is hard to unit test without a DOM harness, so decision
+logic and math are extracted into dependency-free modules under `src/ui/*.js`
+and covered by the standard `node:test` suite. This keeps bug fixes cheap to
+lock down (e.g. the "panel scroll must not seek the video" regression is a
+plain assertion in `tests/fe/gestures.test.js`).
