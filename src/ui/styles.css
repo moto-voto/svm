@@ -1,10 +1,10 @@
 /* Base resets and touch performance */
 body {
+    margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-tap-highlight-color: transparent;
     background-color: #0d0d0d;
     color: #e5e5e5;
-    overflow-y: scroll;
 }
 
 /* Poster card aspect ratio (~ 2 : 3.1) */
@@ -15,17 +15,12 @@ body {
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease;
     background-color: #1a1a1a;
     user-select: none;
     display: block;
     text-decoration: none;
     will-change: transform;
-}
-
-/* Active touch response */
-.poster-card:active {
-    transform: scale(0.96);
 }
 
 /* Hover elevation on desktop */
@@ -75,6 +70,7 @@ body {
 /* Smooth scrollbars */
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {

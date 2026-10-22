@@ -20,6 +20,10 @@ app.get('/solid', (_req, res) => {
     res.sendFile(join(UI_DIST, 'index.html'));
 });
 app.use('/solid', express.static(UI_DIST));
+// SPA fallback: unknown /solid/* paths render the app so the client router can handle them.
+app.use('/solid', (_req, res) => {
+    res.sendFile(join(UI_DIST, 'index.html'));
+});
 
 app.get('/', async (req, res) => {
     const query = String(req.query.q || '');

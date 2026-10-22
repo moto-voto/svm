@@ -1,13 +1,15 @@
 import { createSignal, onMount, Show } from 'solid-js';
-import Header from './components/Header.jsx';
-import VirtualGrid from './components/VirtualGrid.jsx';
-import { searchSeries } from './api.js';
+import { useSearchParams } from '@solidjs/router';
+import Header from '../components/Header.jsx';
+import VirtualGrid from '../components/VirtualGrid.jsx';
+import { searchSeries } from '../api.js';
 
-export default function App() {
-    const initialQuery = new URLSearchParams(window.location.search).get('q') || '';
+export default function SearchPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialQuery = String(searchParams.q || '');
 
     const [items, setItems] = createSignal(
-        /** @type {import('../parser/search.js').SerialDescription[]} */ ([])
+        /** @type {import('../../parser/search.js').SerialDescription[]} */ ([])
     );
     const [loading, setLoading] = createSignal(true);
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
@@ -22,10 +24,7 @@ export default function App() {
         setError(null);
 
         // Keep the URL shareable/bookmarkable.
-        const url = new URL(window.location.href);
-        if (query) url.searchParams.set('q', query);
-        else url.searchParams.delete('q');
-        window.history.replaceState(null, '', url);
+        setSearchParams({ q: query || undefined }, { replace: true });
 
         try {
             setItems(await searchSeries(query));
@@ -42,7 +41,7 @@ export default function App() {
     });
 
     return (
-        <>
+        <div class="min-h-screen flex flex-col bg-[#0d0d0d] text-neutral-200">
             <Header
                 stats={stats()}
                 initialQuery={initialQuery}
@@ -72,6 +71,6 @@ export default function App() {
                 {/* Virtual Canvas Container (grows to full dataset height) */}
                 <VirtualGrid items={items()} onStats={setStats} />
             </main>
-        </>
+        </div>
     );
 }

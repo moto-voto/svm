@@ -1,4 +1,5 @@
 import { createSignal, createMemo, createEffect, onMount, onCleanup, For } from 'solid-js';
+import { A } from '@solidjs/router';
 
 const BUFFER_ROWS = 2;
 const ASPECT_RATIO = 2 / 3.1;
@@ -140,9 +141,8 @@ export default function VirtualGrid(props) {
                 {(index) => {
                     const item = () => props.items[index];
                     return (
-                        <a
-                            href={`/series?url=${encodeURIComponent(item().fullLink)}`}
-                            rel="noopener noreferrer"
+                        <A
+                            href={`/series-details?url=${encodeURIComponent(item().fullLink)}`}
                             class="poster-card"
                             style={positionFor(index)}
                         >
@@ -155,7 +155,7 @@ export default function VirtualGrid(props) {
                                     {item().title}
                                 </h2>
                             </div>
-                        </a>
+                        </A>
                     );
                 }}
             </For>

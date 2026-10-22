@@ -14,3 +14,37 @@ export async function searchSeries(query) {
     }
     return data;
 }
+
+/**
+ * Fetch a series (seasons + current season playlists).
+ * @param {string} url
+ * @returns {Promise<import('../parser/series.js').Series>}
+ */
+export async function fetchSeries(url) {
+    const response = await fetch(`/api/series?url=${encodeURIComponent(url)}`);
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    if (data?.error) {
+        throw new Error(data.error);
+    }
+    return data;
+}
+
+/**
+ * Fetch series details.
+ * @param {string} url
+ * @returns {Promise<import('../parser/series-details.js').SeriesDetails>}
+ */
+export async function fetchSeriesDetails(url) {
+    const response = await fetch(`/api/series-details?url=${encodeURIComponent(url)}`);
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    if (data?.error) {
+        throw new Error(data.error);
+    }
+    return data;
+}
