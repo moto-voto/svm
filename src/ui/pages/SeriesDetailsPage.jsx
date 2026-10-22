@@ -199,16 +199,14 @@ export default function SeriesDetailsPage() {
                                             </span>
                                         }
                                     >
-                                        <a
-                                            href={details()?.fullLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                        <A
+                                            href={`/series?url=${encodeURIComponent(details()?.fullLink || seriesUrl)}`}
                                             class="w-full max-w-[280px] md:max-w-none mt-4 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
                                         >
                                             <i class="fa-solid fa-play text-black text-sm"></i>
                                             <span>Смотреть онлайн</span>
-                                            <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-75 ml-1"></i>
-                                        </a>
+                                            <i class="fa-solid fa-chevron-right text-xs opacity-75 ml-1"></i>
+                                        </A>
                                     </Show>
                                 </div>
 

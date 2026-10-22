@@ -459,7 +459,10 @@ export default function PlayerPage() {
                     {/* Top Navigation Bar */}
                     <div class="flex items-center justify-between w-full">
                         <div class="flex items-center space-x-4">
-                            <A href="/" class="text-white hover:text-blue-400 p-2 transition-colors">
+                            <A
+                                href={`/series-details?url=${encodeURIComponent(seriesUrl)}`}
+                                class="text-white hover:text-blue-400 p-2 transition-colors"
+                            >
                                 <i class="fa-solid fa-arrow-left text-xl sm:text-2xl"></i>
                             </A>
                             <div class="flex flex-col">
