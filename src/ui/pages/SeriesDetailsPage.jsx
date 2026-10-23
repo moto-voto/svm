@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onMount, onCleanup, Show } from 'solid-js';
+import { createSignal, createEffect, onMount, Show } from 'solid-js';
 import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeriesDetails } from '../api.js';
 import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating } from '../series-details.js';
@@ -12,18 +12,7 @@ export default function SeriesDetailsPage() {
     );
     const [loading, setLoading] = createSignal(true);
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
-    const [jsonOpen, setJsonOpen] = createSignal(false);
-    const [toast, setToast] = createSignal(/** @type {string | null} */ (null));
     const [posterSrc, setPosterSrc] = createSignal('');
-
-    /** @type {ReturnType<typeof setTimeout> | undefined} */
-    let toastTimeout;
-
-    const showToast = (message) => {
-        setToast(message);
-        clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => setToast(null), 3000);
-    };
 
     onMount(async () => {
         if (!seriesUrl) {
@@ -40,8 +29,6 @@ export default function SeriesDetailsPage() {
         }
     });
 
-    onCleanup(() => clearTimeout(toastTimeout));
-
     // Keep the poster in sync with the loaded data (and normalize protocol-relative URLs).
     createEffect(() => {
         const image = details()?.image;
@@ -51,22 +38,6 @@ export default function SeriesDetailsPage() {
     });
 
     const fallbackPoster = () => buildPosterFallback(details()?.title);
-
-    const copyJson = async () => {
-        const text = JSON.stringify(details(), null, 2);
-        try {
-            await navigator.clipboard.writeText(text);
-        } catch {
-            // Clipboard fallback for older/unsupported browsers.
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-        }
-        showToast('JSON успешно скопирован в буфер обмена!');
-    };
 
     return (
         <div class="min-h-screen flex flex-col justify-between bg-[#0d0d0e] text-gray-200 selection:bg-brand-orange selection:text-black">
@@ -81,51 +52,41 @@ export default function SeriesDetailsPage() {
                                 <span class="text-xs bg-brand-orange/20 text-brand-orange px-2 py-0.5 rounded font-semibold uppercase tracking-wider">Mobile</span>
                             </span>
                         </div>
-                        <div class="text-xs text-brand-textMuted bg-[#1d1d21] px-3 py-1.5 rounded-md border border-brand-cardBorder">
-                            <span class="text-brand-orange font-medium">ID:</span> {details()?.id || '—'}
-                        </div>
                     </div>
                 </header>
 
                 <main class="max-w-4xl mx-auto px-4 py-5 md:py-8">
-                    {/* Back / JSON actions */}
-                    <div class="mb-5 flex items-center justify-between">
+                    {/* Back to list + primary watch action */}
+                    <div class="mb-5 flex items-center justify-between gap-3">
                         <A
                             href="/"
-                            class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm"
+                            class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
                         >
                             <i class="fa-solid fa-arrow-left text-brand-orange"></i>
                             <span>Назад к списку</span>
                         </A>
 
-                        <button
-                            type="button"
-                            onClick={() => setJsonOpen((open) => !open)}
-                            class="inline-flex items-center gap-1.5 bg-[#1a1a1d] hover:bg-[#242428] text-brand-textMuted hover:text-white text-xs font-medium px-3 py-2 rounded-lg border border-brand-cardBorder transition-all"
-                        >
-                            <i class="fa-solid fa-code text-brand-orange"></i>
-                            <span>{jsonOpen() ? 'Скрыть JSON' : 'JSON Модель'}</span>
-                        </button>
-                    </div>
-
-                    {/* JSON Preview Collapsible Panel */}
-                    <Show when={jsonOpen()}>
-                        <div class="mb-6 bg-[#121214] border border-brand-orange/30 rounded-xl p-4 shadow-inner relative overflow-hidden">
-                            <div class="flex justify-between items-center mb-2 pb-2 border-b border-brand-cardBorder">
-                                <span class="text-xs font-mono text-brand-orange font-semibold flex items-center gap-1.5">
-                                    <i class="fa-solid fa-file-code"></i> Исходная модель JSON
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={copyJson}
-                                    class="text-xs text-brand-textMuted hover:text-white bg-[#222226] px-2.5 py-1 rounded border border-brand-cardBorder transition-colors"
+                        <Show when={details()}>
+                            <Show
+                                when={details()?.fullLink}
+                                fallback={
+                                    <span class="inline-flex items-center gap-2 bg-brand-orange/50 text-black/60 font-bold text-sm py-2.5 px-4 rounded-lg cursor-not-allowed shrink-0">
+                                        <i class="fa-solid fa-play text-black/60 text-sm"></i>
+                                        <span>Смотреть онлайн</span>
+                                    </span>
+                                }
+                            >
+                                <A
+                                    href={`/series?url=${encodeURIComponent(details()?.fullLink || seriesUrl)}`}
+                                    class="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold text-sm py-2.5 px-4 rounded-lg shadow-lg transition-all duration-200 active:scale-95 shrink-0"
                                 >
-                                    <i class="fa-regular fa-copy mr-1"></i> Копировать
-                                </button>
-                            </div>
-                            <pre class="font-mono text-xs text-green-400 overflow-x-auto p-2 bg-[#09090a] rounded border border-[#1f1f22] leading-relaxed">{JSON.stringify(details(), null, 2)}</pre>
-                        </div>
-                    </Show>
+                                    <i class="fa-solid fa-play text-black text-sm"></i>
+                                    <span>Смотреть онлайн</span>
+                                    <i class="fa-solid fa-chevron-right text-xs opacity-75 ml-1"></i>
+                                </A>
+                            </Show>
+                        </Show>
+                    </div>
 
                     <Show when={loading()}>
                         <div class="py-24 flex flex-col items-center justify-center text-brand-textMuted">
@@ -186,26 +147,6 @@ export default function SeriesDetailsPage() {
                                             </span>
                                         </div>
                                     </div>
-
-                                    {/* Full Link External Watch Button */}
-                                    <Show
-                                        when={details()?.fullLink}
-                                        fallback={
-                                            <span class="w-full max-w-[280px] md:max-w-none mt-4 bg-brand-orange/50 text-black/60 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
-                                                <i class="fa-solid fa-play text-black/60 text-sm"></i>
-                                                <span>Смотреть онлайн</span>
-                                            </span>
-                                        }
-                                    >
-                                        <A
-                                            href={`/series?url=${encodeURIComponent(details()?.fullLink || seriesUrl)}`}
-                                            class="w-full max-w-[280px] md:max-w-none mt-4 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
-                                        >
-                                            <i class="fa-solid fa-play text-black text-sm"></i>
-                                            <span>Смотреть онлайн</span>
-                                            <i class="fa-solid fa-chevron-right text-xs opacity-75 ml-1"></i>
-                                        </A>
-                                    </Show>
                                 </div>
 
                                 {/* Right Column: Structured Field Details */}
@@ -226,45 +167,13 @@ export default function SeriesDetailsPage() {
                                         <h3 class="text-xs font-bold uppercase tracking-wider text-brand-orange mb-2 flex items-center gap-2">
                                             <i class="fa-solid fa-align-left"></i> Описание сериала
                                         </h3>
-                                        <p class="text-gray-300 text-xs sm:text-sm leading-relaxed font-normal">
+                                        <p class="text-gray-200 text-base sm:text-lg leading-relaxed font-normal">
                                             {details()?.description || 'Описание отсутствует.'}
                                         </p>
                                     </div>
 
-                                    {/* Rating Cards Row */}
-                                    <div class="grid grid-cols-2 gap-3 py-2">
-                                        <div class="bg-[#121214] border border-brand-cardBorder p-3 rounded-xl flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-black text-lg">
-                                                <i class="fa-brands fa-imdb"></i>
-                                            </div>
-                                            <div>
-                                                <div class="text-[11px] text-brand-textMuted uppercase font-medium">IMDb Рейтинг</div>
-                                                <div class="text-base font-bold text-white">{formatRating(details()?.imdb)}</div>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-[#121214] border border-brand-cardBorder p-3 rounded-xl flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 font-black text-sm">
-                                                КП
-                                            </div>
-                                            <div>
-                                                <div class="text-[11px] text-brand-textMuted uppercase font-medium">Кинопоиск</div>
-                                                <div class="text-base font-bold text-gray-400">{formatRating(details()?.kinopoisk)}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
                                     {/* Field Item List (Key / Value Pairs) */}
-                                    <div class="bg-[#121214] rounded-xl border border-brand-cardBorder divide-y divide-[#222228] text-sm">
-                                        <div class="p-3 sm:px-4 flex justify-between items-center">
-                                            <span class="text-brand-textMuted font-medium flex items-center gap-2">
-                                                <i class="fa-solid fa-hashtag text-xs text-brand-orange w-4"></i> ID Карточки
-                                            </span>
-                                            <span class="font-mono text-white bg-[#1e1e22] px-2 py-0.5 rounded border border-[#2a2a30] text-xs">
-                                                {details()?.id || '—'}
-                                            </span>
-                                        </div>
-
+                                    <div class="bg-[#121214] rounded-xl border border-brand-cardBorder divide-y divide-[#222228] text-xs sm:text-sm">
                                         <div class="p-3 sm:px-4 flex justify-between items-center">
                                             <span class="text-brand-textMuted font-medium flex items-center gap-2">
                                                 <i class="fa-solid fa-calendar text-xs text-brand-orange w-4"></i> Год выпуска
@@ -328,14 +237,6 @@ export default function SeriesDetailsPage() {
                     <div class="text-brand-orange font-medium">svm on MotorHeat</div>
                 </div>
             </footer>
-
-            {/* Toast notification */}
-            <Show when={toast()}>
-                <div class="fixed bottom-5 right-5 bg-brand-orange text-black font-semibold text-xs py-2.5 px-4 rounded-xl shadow-2xl z-50 flex items-center gap-2">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>{toast()}</span>
-                </div>
-            </Show>
         </div>
     );
 }
