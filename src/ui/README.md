@@ -25,13 +25,22 @@ Pages:
 
 ```bash
 npm run build:ui   # production build -> src/ui/dist (served at the root)
-npm run dev:ui     # Vite dev server with HMR
 npm start          # builds the UI (prestart) then runs Express
+
+npm run dev:ui     # backend + Vite dev server with HMR (Vite proxies /api -> :3000)
+npm run dev:be     # backend only (no UI build), serves src/ui/dist if present
 
 npm test           # run all unit tests (node:test)
 npm run test:be    # backend tests only
 npm run test:fe    # frontend tests only
 ```
+
+### Dev mode (`npm run dev:ui`)
+
+Runs `src/server.js` (API on `PORT`, default `3000`) and the Vite dev server
+(default `5173`) together via `scripts/dev-ui.js`. Vite's `server.proxy` forwards
+`/api/*` to the backend, so the SPA talks to the live API without a production
+build. When either process exits, the other is stopped too.
 
 ## Tests
 
