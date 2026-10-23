@@ -1,6 +1,7 @@
 import { createSignal, createEffect, onMount, Show } from 'solid-js';
 import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeriesDetails } from '../api.js';
+import Header from '../components/Header.jsx';
 import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating } from '../series-details.js';
 
 export default function SeriesDetailsPage() {
@@ -42,18 +43,7 @@ export default function SeriesDetailsPage() {
     return (
         <div class="min-h-screen flex flex-col justify-between bg-[#0d0d0e] text-gray-200 selection:bg-brand-orange selection:text-black">
             <div>
-                {/* Top Navigation Bar */}
-                <header class="bg-[#141416] border-b border-brand-cardBorder sticky top-0 z-50 shadow-md">
-                    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <span class="text-brand-orange font-bold text-lg md:text-xl tracking-tight flex items-center gap-2">
-                                <i class="fa-solid font-black fa-play-circle text-brand-orange"></i>
-                                Seasonvar
-                                <span class="text-xs bg-brand-orange/20 text-brand-orange px-2 py-0.5 rounded font-semibold uppercase tracking-wider">Mobile</span>
-                            </span>
-                        </div>
-                    </div>
-                </header>
+                <Header maxWidth="max-w-4xl" />
 
                 <main class="max-w-4xl mx-auto px-4 py-5 md:py-8">
                     {/* Back to list + primary watch action */}

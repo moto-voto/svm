@@ -84,7 +84,7 @@ src/ui/
 │   ├── SeriesDetailsPage.jsx   # series details card
 │   └── player.css              # player-specific styles
 └── components/
-    ├── Header.jsx              # header, search form, live stats
+    ├── Header.jsx              # unified header (brand, optional stats + search)
     └── VirtualGrid.jsx         # virtualized/windowed poster grid
 ```
 
