@@ -42,11 +42,6 @@ export function brightnessOverlayColor(brightness) {
     return `rgba(0, 0, 0, ${1 - brightness})`;
 }
 
-/** Flip the hardware/software decoder mode. */
-export function nextDecoderMode(current) {
-    return current === 'HW' ? 'SW' : 'HW';
-}
-
 /** Seconds skipped by the arrow-left / arrow-right shortcuts. */
 export const SEEK_STEP_SECONDS = 5;
 

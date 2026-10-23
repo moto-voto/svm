@@ -11,7 +11,6 @@ import {
     clampEpisodeIndex,
     episodeCount,
     brightnessOverlayColor,
-    nextDecoderMode,
     resolveTapAction,
     TAP_ACTIONS,
     resolveKeyAction,
@@ -40,7 +39,6 @@ export default function PlayerPage() {
     const [isLocked, setIsLocked] = createSignal(false);
     const [controlsVisible, setControlsVisible] = createSignal(true);
     const [activePanel, setActivePanel] = createSignal(/** @type {string | null} */ (null));
-    const [decoderMode, setDecoderMode] = createSignal('HW');
     const [isPlaying, setIsPlaying] = createSignal(false);
     const [needsUnmute, setNeedsUnmute] = createSignal(false);
     const [isFullscreen, setIsFullscreen] = createSignal(false);
@@ -549,18 +547,6 @@ export default function PlayerPage() {
 
                             <button
                                 type="button"
-                                class="px-2 py-0.5 border border-white/40 text-xs font-bold rounded hover:bg-white/10 text-gray-200"
-                                onClick={() => {
-                                    const next = nextDecoderMode(decoderMode());
-                                    setDecoderMode(next);
-                                    showOSD('fa-microchip', `${next} Decoder`);
-                                }}
-                            >
-                                {decoderMode()}
-                            </button>
-
-                            <button
-                                type="button"
                                 class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors"
                                 title="Seasons"
                                 onClick={(e) => {
@@ -581,10 +567,6 @@ export default function PlayerPage() {
                                 }}
                             >
                                 <i class="fa-solid fa-music text-lg"></i>
-                            </button>
-
-                            <button type="button" class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors" title="More Options">
-                                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
                             </button>
                         </div>
                     </div>
