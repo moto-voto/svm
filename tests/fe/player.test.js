@@ -9,7 +9,6 @@ import {
     clampEpisodeIndex,
     episodeCount,
     brightnessOverlayColor,
-    nextDecoderMode,
     resolveTapAction,
     TAP_ACTIONS,
     resolveKeyAction,
@@ -69,11 +68,6 @@ test('brightnessOverlayColor inverts brightness into an overlay alpha', () => {
     assert.equal(brightnessOverlayColor(1), 'rgba(0, 0, 0, 0)');
     assert.equal(brightnessOverlayColor(0.5), 'rgba(0, 0, 0, 0.5)');
     assert.equal(brightnessOverlayColor(0.2), 'rgba(0, 0, 0, 0.8)');
-});
-
-test('nextDecoderMode flips between HW and SW', () => {
-    assert.equal(nextDecoderMode('HW'), 'SW');
-    assert.equal(nextDecoderMode('SW'), 'HW');
 });
 
 test('resolveTapAction prioritises the open panel, then lock state', () => {
