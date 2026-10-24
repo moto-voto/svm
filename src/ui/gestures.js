@@ -33,17 +33,28 @@ export function resetGestureState() {
     return { horizontal: false, seekStart: 0 };
 }
 
-/** A drag is horizontal when it travels further sideways than vertically. */
+/**
+ * A drag is horizontal when it travels further sideways than vertically.
+ * @param {number} deltaX
+ * @param {number} deltaY
+ */
 export function isHorizontalGesture(deltaX, deltaY) {
     return Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SEEK_THRESHOLD_PX;
 }
 
-/** Seek offset in seconds for a horizontal drag across `width` pixels. */
+/**
+ * Seek offset in seconds for a horizontal drag across `width` pixels.
+ * @param {number} deltaX
+ * @param {number} width
+ */
 export function seekDelta(deltaX, width) {
     return (deltaX / width) * SEEK_RANGE_SECONDS;
 }
 
-/** Track icon name for a volume percentage. */
+/**
+ * Track icon name for a volume percentage.
+ * @param {number} percent
+ */
 export function volumeIconFor(percent) {
     if (percent === 0) return 'fa-volume-mute';
     return percent > 50 ? 'fa-volume-high' : 'fa-volume-low';

@@ -81,6 +81,10 @@ export default function PlayerPage() {
 
     // ---- OSD / loader / controls visibility helpers ----
 
+    /**
+     * @param {string} icon
+     * @param {string} text
+     */
     function showOSD(icon, text, subtext = '') {
         setOsd({ visible: true, icon, text, subtext });
         clearTimeout(osdTimeout);
@@ -189,6 +193,9 @@ export default function PlayerPage() {
 
     // ---- Playback ----
 
+    /**
+     * @param {number} epIdx
+     */
     function loadEpisode(epIdx, autoPlay = true, startTime = 0) {
         const ep = activePlaylist()[epIdx];
         if (!ep || !ep.file || !video) return;
@@ -265,6 +272,9 @@ export default function PlayerPage() {
 
     // ---- Panels ----
 
+    /**
+     * @param {string} name
+     */
     function openPanel(name) {
         setActivePanel(name);
         resetControlsTimer();
@@ -275,6 +285,9 @@ export default function PlayerPage() {
         resetControlsTimer();
     }
 
+    /**
+     * @param {string} name
+     */
     function togglePanel(name) {
         if (activePanel() === name) closePanels();
         else openPanel(name);
@@ -282,6 +295,9 @@ export default function PlayerPage() {
 
     // ---- Seasons / translations ----
 
+    /**
+     * @param {number} newIndex
+     */
     async function changeSeason(newIndex) {
         const index = Number(newIndex);
         if (index === selectedSeasonIndex()) return;
@@ -304,6 +320,9 @@ export default function PlayerPage() {
         }
     }
 
+    /**
+     * @param {number} newIndex
+     */
     function selectTranslation(newIndex) {
         const index = Number(newIndex);
         if (index === selectedTranslationIndex()) return;
@@ -359,6 +378,9 @@ export default function PlayerPage() {
         persistProgress(false);
     }
 
+    /**
+     * @param {{ currentTarget: { value: any; }; }} event
+     */
     function onSeekInput(event) {
         if (!video || !(duration() > 0)) return;
         const pct = Number(event.currentTarget.value);
@@ -370,7 +392,7 @@ export default function PlayerPage() {
 
     onMount(async () => {
         // Keyboard shortcuts
-        const onKeyDown = (event) => {
+        const onKeyDown = (/** @type {KeyboardEvent} */ event) => {
             if (isLocked() || !video) return;
             switch (resolveKeyAction(event.key)) {
                 case KEY_ACTIONS.TOGGLE_PLAY:
@@ -423,7 +445,7 @@ export default function PlayerPage() {
         let swiping = false;
         let gestureState = resetGestureState();
 
-        const onTouchStart = (event) => {
+        const onTouchStart = (/** @type {TouchEvent} */ event) => {
             if (isLocked() || !playerContainer) return;
             // When a panel is open (or the touch starts inside a horizontally
             // scrollable panel), let the panel handle the gesture instead of
@@ -445,7 +467,7 @@ export default function PlayerPage() {
             }
         };
 
-        const onTouchMove = (event) => {
+        const onTouchMove = (/** @type {TouchEvent} */ event) => {
             if (!swiping || isLocked() || activePanel() || !video || !playerContainer) return;
             const touch = event.touches[0];
 

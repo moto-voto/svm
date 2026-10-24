@@ -52,7 +52,7 @@ export default function VirtualGrid(props) {
     );
 
     /** Absolute position for a card at the given item index. */
-    const position = (index) => positionFor(layout(), index);
+    const position = (/** @type {number} */ index) => positionFor(layout(), index);
 
     // Keep the header stats in sync with what is actually mounted.
     createEffect(() => {

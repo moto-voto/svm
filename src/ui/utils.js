@@ -1,18 +1,27 @@
+
 /**
  * Small pure helpers shared by the UI (see `pages/PlayerPage.jsx`).
+ * Clamp `value` into the inclusive `[min, max]` range.
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
  */
-
-/** Clamp `value` into the inclusive `[min, max]` range. */
 export function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
 }
 
-/** Normalize a user-entered search query (null/undefined safe). */
+/**
+ * Normalize a user-entered search query (null/undefined safe).
+ * @param {string} value
+ */
 export function normalizeQuery(value) {
     return (value ?? '').trim();
 }
 
-/** Strip a trailing dangling parenthesis from raw titles. */
+/**
+ * Strip a trailing dangling parenthesis from raw titles.
+ * @param {string} rawTitle
+ */
 export function cleanTitle(rawTitle) {
     return (rawTitle || '').replace(/\s*\(\s*$/, '').trim();
 }
@@ -23,7 +32,7 @@ export function cleanTitle(rawTitle) {
  */
 export function formatTime(seconds) {
     if (isNaN(seconds) || seconds === Infinity) return '00:00';
-    const pad = (num) => String(num).padStart(2, '0');
+    const pad = (/** @type {number} */ num) => String(num).padStart(2, '0');
     const sec = Math.floor(seconds % 60);
     const min = Math.floor((seconds / 60) % 60);
     const hrs = Math.floor(seconds / 3600);
