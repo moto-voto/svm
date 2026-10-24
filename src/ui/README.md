@@ -1,6 +1,8 @@
 # Seasonvar Mobile UI (SolidJS)
 
-This folder is the SolidJS single-page app, served by Express at the site root.
+This folder is the SolidJS single-page app, served by Express or directly by
+nginx. The deployment prefix is **detected at runtime**, so the same build can
+be hosted at the root (`/`) or under any prefix (`/svm`, `/foo/bar`, ...).
 It replaces the former server-rendered EJS views (`src/views` has been removed).
 
 Pages:
@@ -33,6 +35,63 @@ npm run test:be    # backend tests only
 npm run test:fe    # frontend tests only
 ```
 
+## Hosting under a prefix (`/svm`, ...)
+
+The prefix is not known at build time, so the production build is
+prefix-agnostic:
+
+- Vite builds with a **relative base** (`base: './'`), so `index.html`
+  references `./assets/...`. The browser resolves those against whatever URL
+  the SPA was served from (root or any prefix).
+- At startup the app derives the real prefix from the URL of the entry module
+  (`import.meta.url`): the bundle always lives at `<prefix>/assets/<file>.js`,
+  so that directory minus `assets/` is the prefix. Dev modules served from
+  `<prefix>/src/...` are handled the same way.
+
+`src/ui/utils.js` exposes the result and everything else consumes it:
+
+- `BASE_URL` — `/svm/` (leading + trailing slash)
+- `BASE_PATH` — `/svm` (no trailing slash, for the `<Router base>` prop)
+- `withBase(path)` — `withBase('/api/x')` -> `/svm/api/x`
+
+`src/ui/api.js` calls `withBase(...)` for every request, and internal links use
+Solid Router's `<A>`, which prepends the router base itself.
+
+### nginx example
+
+Build once, then let nginx serve the static files and proxy the API. Note the
+redirect from the bare prefix to its trailing-slash form: relative `./assets`
+URLs only resolve correctly when the document URL ends with `/`.
+
+```nginx
+server {
+    # Keep the SPA prefix stable; /svm -> /svm/ is required.
+    location = /svm { return 301 /svm/; }
+
+    location /svm/ {
+        alias /var/www/svm/;          # dist/public contents
+        try_files $uri $uri/ /svm/index.html;
+    }
+
+    # Strip the prefix before hitting the Node API server.
+    location /svm/api/ {
+        proxy_pass http://127.0.0.1:3000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+With the config above the Node server runs at the root (`node dist/svm.js`,
+no `BASE_PATH`). If the Node server is exposed directly and hosts the SPA
+itself, set `BASE_PATH` so it mounts API + static + SPA fallback under the
+prefix and redirects the bare prefix:
+
+```bash
+BASE_PATH=/svm node dist/svm.js   # http://host/svm/
+```
+
 ## Tests
 
 Unit tests use the built-in Node.js test runner (`node:test`) and live under
@@ -42,7 +101,7 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
   with fixtures and a small `fetch` stub.
 - `tests/fe` — the dependency-free frontend modules:
   - `src/ui/api.js` (backend client)
-  - `src/ui/utils.js` (`clamp`, `normalizeQuery`, `cleanTitle`, `formatTime`)
+  - `src/ui/utils.js` (`clamp`, `normalizeQuery`, `cleanTitle`, `formatTime`, base-path helpers)
   - `src/ui/grid-layout.js` (virtualized-grid math + stats label)
   - `src/ui/gestures.js` (`resolveGesture` touch decision logic)
   - `src/ui/player.js` (progress/seek, tap/keyboard decisions, index helpers)
@@ -73,7 +132,7 @@ src/ui/
 ├── index.html                  # Vite entry (Tailwind, FontAwesome, Inter)
 ├── index.jsx                   # Router setup
 ├── api.js                      # backend client
-├── utils.js                    # clamp, normalizeQuery, cleanTitle, formatTime
+├── utils.js                    # clamp, normalizeQuery, cleanTitle, formatTime, BASE_PATH/withBase
 ├── gestures.js                 # resolveGesture (touch decision logic)
 ├── player.js                   # player display/index/keyboard/tap helpers
 ├── watch-progress.js            # IndexedDB watch-progress persistence

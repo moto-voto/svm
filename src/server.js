@@ -9,11 +9,24 @@ import { apiSeriesDetails } from './api/api-series-details.js';
 
 const __dirname = import.meta.dirname;
 
+/**
+ * Runtime mount point for the whole app (API + static UI). Must match the
+ * `BASE_PATH` the frontend was built with (`vite.config.fe.js`), unless a
+ * reverse proxy strips the prefix before forwarding (then keep this at "/").
+ *
+ * Examples:
+ *   BASE_PATH=/svm node dist/svm.js   # app served at http://host/svm/
+ *   node dist/svm.js                  # app served at http://host/
+ */
+const rawBase = process.env.BASE_PATH || '/';
+const BASE_PATH = `/${String(rawBase).replace(/^\/+|\/+$/g, '')}`.replace(/^\/$/, '') || '';
+
 const app = express();
+const router = express.Router();
 
 // ---- API ----
 
-app.get('/api/search', async (req, res) => {
+router.get('/api/search', async (req, res) => {
     const query = String(req.query.q || '');
     try {
         const searchResult = await apiSearch(query);
@@ -23,7 +36,7 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-app.get('/api/series-list', async (req, res) => {
+router.get('/api/series-list', async (req, res) => {
     try {
         const seriesList = await apiSeriesList();
         res.json(seriesList);
@@ -32,7 +45,7 @@ app.get('/api/series-list', async (req, res) => {
     }
 });
 
-app.get('/api/playlist', async (req, res) => {
+router.get('/api/playlist', async (req, res) => {
     const seriesUrl = String(req.query.url || '');
 
     if (!seriesUrl) {
@@ -47,7 +60,7 @@ app.get('/api/playlist', async (req, res) => {
     }
 });
 
-app.get('/api/series', async (req, res) => {
+router.get('/api/series', async (req, res) => {
     const seriesUrl = String(req.query.url || '');
 
     if (!seriesUrl) {
@@ -62,7 +75,7 @@ app.get('/api/series', async (req, res) => {
     }
 });
 
-app.get('/api/series-details', async (req, res) => {
+router.get('/api/series-details', async (req, res) => {
     const url = String(req.query.url || '');
 
     if (!url) {
@@ -77,19 +90,32 @@ app.get('/api/series-details', async (req, res) => {
     }
 });
 
-// ---- SolidJS SPA (built by `npm run build:ui` into dist/public) ----
+// ---- SolidJS SPA (built by `npm run build:fe` into dist/public) ----
 
 const UI_DIST = join(__dirname, '..', 'dist', 'public');
-app.use(express.static(UI_DIST));
+router.use(express.static(UI_DIST));
 
 // SPA fallback: unknown paths render the app so the client router can handle them.
-app.use((_req, res) => {
+router.use((_req, res) => {
     res.sendFile(join(UI_DIST, 'index.html'));
 });
+
+// Mount everything under the configured prefix ("/" when unset).
+// The trailing-slash redirect keeps relative asset URLs (`./assets/...`)
+// resolving against the app root. nginx should do the same when it serves
+// the static files directly.
+if (BASE_PATH) {
+    app.get(BASE_PATH, (req, res, next) => {
+        // Non-strict routing also matches the trailing-slash form; only the
+        // bare prefix (no slash) needs the redirect.
+        if (req.path === BASE_PATH) return res.redirect(301, `${BASE_PATH}/`);
+        next();
+    });
+}
+app.use(BASE_PATH || '/', router);
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    log('log', `✅ Server running at http://localhost:${PORT}`);
+    log('log', `✅ Server running at http://localhost:${PORT}${BASE_PATH || ''}/`);
 });
-

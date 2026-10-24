@@ -1,7 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cleanTitle, formatTime, clamp, normalizeQuery } from '../../src/ui/utils.js';
+import {
+    cleanTitle,
+    formatTime,
+    clamp,
+    normalizeQuery,
+    withBase,
+    joinBase,
+    basePathFromScriptUrl,
+    BASE_PATH,
+    BASE_URL,
+} from '../../src/ui/utils.js';
 
 test('cleanTitle trims and strips a trailing dangling parenthesis', () => {
     assert.equal(cleanTitle('  Season 1 (  '), 'Season 1');
@@ -45,4 +55,43 @@ test('formatTime renders HH:MM:SS past an hour', () => {
 test('formatTime handles invalid input', () => {
     assert.equal(formatTime(NaN), '00:00');
     assert.equal(formatTime(Infinity), '00:00');
+});
+
+test('BASE_PATH/BASE_URL default to the root outside a browser', () => {
+    assert.equal(BASE_PATH, '');
+    assert.equal(BASE_URL, '/');
+});
+
+test('basePathFromScriptUrl detects the deployment prefix', () => {
+    assert.equal(basePathFromScriptUrl('https://host/svm/assets/index-abc.js'), '/svm/');
+    assert.equal(basePathFromScriptUrl('https://host/svm/nested/assets/index.js'), '/svm/nested/');
+    assert.equal(basePathFromScriptUrl('https://host/assets/index-abc.js'), '/');
+    assert.equal(basePathFromScriptUrl('https://host/svm/assets/index.js?v=1#x'), '/svm/');
+    // Vite dev server module paths.
+    assert.equal(basePathFromScriptUrl('http://localhost:5173/src/ui/utils.js'), '/');
+    assert.equal(basePathFromScriptUrl('http://localhost:5173/svm/src/ui/utils.js'), '/svm/');
+    assert.equal(basePathFromScriptUrl('http://localhost:5173/svm/src/ui/pages/x.js'), '/svm/');
+    // A prefix that itself contains "src"/"assets" is preserved.
+    assert.equal(basePathFromScriptUrl('http://localhost:5173/assets/src/ui/x.js'), '/assets/');
+    assert.equal(basePathFromScriptUrl('https://host/src/assets/index.js'), '/src/');
+    // Assets emitted without a dedicated assets dir still resolve sensibly.
+    assert.equal(basePathFromScriptUrl('https://host/svm/index-abc.js'), '/svm/');
+});
+
+test('joinBase composes base and app paths', () => {
+    assert.equal(joinBase('', '/api/search?q=a'), '/api/search?q=a');
+    assert.equal(joinBase('', 'api/search'), '/api/search');
+    assert.equal(joinBase('/svm', '/api/search?q=a'), '/svm/api/search?q=a');
+    assert.equal(joinBase('/svm', 'series'), '/svm/series');
+    assert.equal(joinBase('/svm/', '/series-details'), '/svm/series-details');
+    assert.equal(joinBase('/svm', ''), '/svm');
+    assert.equal(joinBase('', ''), '/');
+});
+
+test('withBase prefixes app paths with the detected deployment base', () => {
+    assert.equal(withBase('/api/search?q=a'), '/api/search?q=a');
+    assert.equal(withBase('api/search?q=a'), '/api/search?q=a');
+    assert.equal(withBase('/series-details'), '/series-details');
+    assert.equal(withBase(''), '/');
+    assert.equal(withBase(undefined), '/');
 });
