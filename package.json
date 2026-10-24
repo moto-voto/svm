@@ -13,6 +13,8 @@
     "build": "npm install --no-audit --no-fund && npm run test && npm run build:fe && npm run build:be",
     "dev:fe": "vite --config vite.config.fe.js",
     "dev:be": "node src/server.js",
+    "predeploy": "npm run test && npm run build:be && npm run build:fe",
+    "deploy": "node scripts/deploy.js",
     "check": "tsc"
   },
   "keywords": [],
