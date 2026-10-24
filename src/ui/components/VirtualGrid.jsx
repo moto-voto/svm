@@ -2,12 +2,14 @@ import { createSignal, createMemo, createEffect, onMount, onCleanup, For } from 
 import { A } from '@solidjs/router';
 import { computeLayout, computeVisibleIndices, positionFor, formatGridStats } from '../grid-layout.js';
 
+/** @import { SerialDescription } from '../../parser/search.js' */
+
 /**
  * Windowed / virtualized poster grid. Only the DOM nodes near the viewport are
  * mounted, keeping large result sets fast on mobile.
  *
  * @param {{
- *   items: import('../../parser/search.js').SerialDescription[],
+ *   items: SerialDescription[],
  *   onStats?: (stats: string) => void,
  * }} props
  */

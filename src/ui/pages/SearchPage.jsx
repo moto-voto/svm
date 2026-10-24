@@ -5,16 +5,27 @@ import VirtualGrid from '../components/VirtualGrid.jsx';
 import { searchSeries } from '../api.js';
 import { normalizeQuery } from '../utils.js';
 
+/** @import { SerialDescription } from '../../parser/search.js' */
+
 export default function SearchPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const initialQuery = normalizeQuery(String(searchParams.q || ''));
 
     const [items, setItems] = createSignal(
-        /** @type {import('../../parser/search.js').SerialDescription[]} */ ([])
+        /** @type {SerialDescription[]} */ ([])
     );
     const [loading, setLoading] = createSignal(true);
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
     const [stats, setStats] = createSignal('0 / 0');
+
+    // Search input is page-owned now (Header only hosts the markup).
+    const [query, setQuery] = createSignal(initialQuery);
+
+    /** @param {SubmitEvent} event */
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        load(normalizeQuery(query()));
+    };
 
     /**
      * Load results for a query from the backend.
@@ -44,11 +55,36 @@ export default function SearchPage() {
     return (
         <div class="min-h-screen flex flex-col bg-[#0d0d0d] text-neutral-200">
             <Header
-                stats={stats()}
-                initialQuery={initialQuery}
-                disabled={loading()}
-                onSearch={load}
-            />
+                maxWidth="max-w-7xl"
+                topRight={
+                    <Show when={stats()}>
+                        <span class="text-xs bg-brand-orange/15 text-brand-orange font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+                            {stats()}
+                        </span>
+                    </Show>
+                }
+            >
+                <form
+                    class="w-full flex items-center shadow-inner rounded overflow-hidden bg-[#2d2d2d] border border-neutral-700/60 focus-within:border-brand-orange transition-colors"
+                    onSubmit={handleSubmit}
+                >
+                    <input
+                        type="text"
+                        placeholder="Поиск сериала..."
+                        value={query()}
+                        disabled={loading()}
+                        onInput={(event) => setQuery(event.currentTarget.value)}
+                        class="w-full px-3 py-1.5 text-sm bg-transparent text-neutral-100 placeholder-neutral-400 focus:outline-none disabled:opacity-60"
+                    />
+                    <button
+                        type="submit"
+                        disabled={loading()}
+                        class="bg-brand-orange hover:bg-brand-orangeDark active:bg-brand-orangeDark text-black font-bold text-sm px-4 py-1.5 transition-colors shrink-0 flex items-center justify-center disabled:opacity-60"
+                    >
+                        Go
+                    </button>
+                </form>
+            </Header>
 
             <main class="max-w-7xl mx-auto p-3 sm:p-5 flex-1 w-full relative">
                 {/* Loading Spinner Overlay */}

@@ -30,6 +30,8 @@ import {
 } from '../player.js';
 import './player.css';
 
+/** @import { Series } from '../../parser/series.js' */
+
 export default function PlayerPage() {
     const [searchParams] = useSearchParams();
     const seriesUrl = String(searchParams.url || '');
@@ -41,7 +43,7 @@ export default function PlayerPage() {
     let playerContainer;
 
     const [payload, setPayload] = createSignal(
-        /** @type {import('../../parser/series.js').Series | null} */ (null)
+        /** @type {Series | null} */ (null)
     );
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
     const [selectedSeasonIndex, setSelectedSeasonIndex] = createSignal(0);
@@ -169,7 +171,7 @@ export default function PlayerPage() {
      * freshly loaded season list) and resume it. Because the backend only
      * returns playlists for the fetched season, a different last-played season
      * is re-fetched via `changeSeason`.
-     * @param {import('../../parser/series.js').Series} series
+     * @param {Series} series
      */
     async function restoreSeriesProgress(series) {
         const initialIndex = selectedSeasonIndex();

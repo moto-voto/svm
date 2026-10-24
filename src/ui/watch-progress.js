@@ -46,7 +46,7 @@ export function watchProgressKey(seriesId, seasonLink) {
 /**
  * Pick the episode/position to resume from, guarding against a stale record
  * that points past the end of the current playlist.
- * @param {import('./watch-progress.js').SeasonProgress | null | undefined} record
+ * @param {SeasonProgress | null | undefined} record
  * @param {number} episodeCount
  * @returns {{ episodeIndex: number, position: number }}
  */
@@ -65,9 +65,9 @@ export function resolveResumeState(record, episodeCount) {
 /**
  * Merge a new episode position into an existing record, marking the episode as
  * the last played one. Returns a fresh object (no mutation).
- * @param {import('./watch-progress.js').SeasonProgress | null | undefined} existing
+ * @param {SeasonProgress | null | undefined} existing
  * @param {{ key: string, seriesId: string, seasonLink: string, episodeIndex: number, position: number }} update
- * @returns {import('./watch-progress.js').SeasonProgress}
+ * @returns {SeasonProgress}
  */
 export function upsertEpisodeProgress(existing, update) {
     const { key, seriesId, seasonLink, episodeIndex, position } = update;
@@ -89,9 +89,9 @@ export function upsertEpisodeProgress(existing, update) {
 /**
  * Merge the last played season into an existing series record. Returns a fresh
  * object (no mutation).
- * @param {import('./watch-progress.js').SeriesProgress | null | undefined} existing
+ * @param {SeriesProgress | null | undefined} existing
  * @param {{ seriesId: string, seasonLink: string }} update
- * @returns {import('./watch-progress.js').SeriesProgress}
+ * @returns {SeriesProgress}
  */
 export function upsertSeriesProgress(existing, update) {
     const { seriesId, seasonLink } = update;
@@ -106,7 +106,7 @@ export function upsertSeriesProgress(existing, update) {
 /**
  * Resolve the stored last-played season link, but only when it still exists in
  * the freshly loaded season list. Returns `null` when it cannot be trusted.
- * @param {import('./watch-progress.js').SeriesProgress | null | undefined} record
+ * @param {SeriesProgress | null | undefined} record
  * @param {{ link?: string }[]} seasons
  * @returns {string | null}
  */
@@ -149,7 +149,7 @@ export function openProgressDB() {
  * Read the saved progress for a season.
  * @param {string} seriesId
  * @param {string} seasonLink
- * @returns {Promise<import('./watch-progress.js').SeasonProgress | null>}
+ * @returns {Promise<SeasonProgress | null>}
  */
 export async function loadSeasonProgress(seriesId, seasonLink) {
     const db = await openProgressDB();
@@ -220,7 +220,7 @@ export async function saveEpisodeProgress(seriesId, seasonLink, episodeIndex, po
 /**
  * Read the saved last-played season for a series.
  * @param {string} seriesId
- * @returns {Promise<import('./watch-progress.js').SeriesProgress | null>}
+ * @returns {Promise<SeriesProgress | null>}
  */
 export async function loadSeriesProgress(seriesId) {
     const db = await openProgressDB();

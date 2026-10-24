@@ -5,12 +5,14 @@ import { loadSeriesProgress } from '../watch-progress.js';
 import Header from '../components/Header.jsx';
 import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating, buildPlayerHref } from '../series-details.js';
 
+/** @import { SeriesDetails } from '../../parser/series-details.js' */
+
 export default function SeriesDetailsPage() {
     const [searchParams] = useSearchParams();
     const seriesUrl = String(searchParams.url || '');
 
     const [details, setDetails] = createSignal(
-        /** @type {import('../../parser/series-details.js').SeriesDetails | null} */ (null)
+        /** @type {SeriesDetails | null} */ (null)
     );
     const [loading, setLoading] = createSignal(true);
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
@@ -53,11 +55,9 @@ export default function SeriesDetailsPage() {
     return (
         <div class="min-h-screen flex flex-col justify-between bg-[#0d0d0e] text-gray-200 selection:bg-brand-orange selection:text-black">
             <div>
-                <Header maxWidth="max-w-4xl" />
-
-                <main class="max-w-4xl mx-auto px-4 py-5 md:py-8">
-                    {/* Back to list + primary watch action */}
-                    <div class="mb-5 flex items-center justify-between gap-3">
+                <Header maxWidth="max-w-4xl">
+                    {/* Back to list + primary watch action, pinned while scrolling */}
+                    <div class="flex items-center justify-between gap-3">
                         <A
                             href="/"
                             class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
@@ -66,28 +66,28 @@ export default function SeriesDetailsPage() {
                             <span>Назад к списку</span>
                         </A>
 
-                        <Show when={details()}>
-                            <Show
-                                when={details()?.fullLink}
-                                fallback={
-                                    <span class="inline-flex items-center gap-2 bg-brand-orange/50 text-black/60 font-bold text-sm py-2.5 px-4 rounded-lg cursor-not-allowed shrink-0">
-                                        <i class="fa-solid fa-play text-black/60 text-sm"></i>
-                                        <span>Смотреть онлайн</span>
-                                    </span>
-                                }
-                            >
-                                <A
-                                    href={buildPlayerHref(details()?.fullLink || seriesUrl, lastSeasonLink())}
-                                    class="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold text-sm py-2.5 px-4 rounded-lg shadow-lg transition-all duration-200 active:scale-95 shrink-0"
-                                >
-                                    <i class="fa-solid fa-play text-black text-sm"></i>
+                        <Show
+                            when={details()?.fullLink}
+                            fallback={
+                                <span class="inline-flex items-center gap-2 bg-brand-orange/50 text-black/60 font-bold text-sm py-2.5 px-4 rounded-lg cursor-not-allowed shrink-0">
+                                    <i class="fa-solid fa-play text-black/60 text-sm"></i>
                                     <span>Смотреть онлайн</span>
-                                    <i class="fa-solid fa-chevron-right text-xs opacity-75 ml-1"></i>
-                                </A>
-                            </Show>
+                                </span>
+                            }
+                        >
+                            <A
+                                href={buildPlayerHref(details()?.fullLink || seriesUrl, lastSeasonLink())}
+                                class="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold text-sm py-2.5 px-4 rounded-lg shadow-lg transition-all duration-200 active:scale-95 shrink-0"
+                            >
+                                <i class="fa-solid fa-play text-black text-sm"></i>
+                                <span>Смотреть онлайн</span>
+                                <i class="fa-solid fa-chevron-right text-xs opacity-75 ml-1"></i>
+                            </A>
                         </Show>
                     </div>
+                </Header>
 
+                <main class="max-w-4xl mx-auto px-4 py-5 md:py-8">
                     <Show when={loading()}>
                         <div class="py-24 flex flex-col items-center justify-center text-brand-textMuted">
                             <div class="w-12 h-12 border-4 border-brand-orange/20 border-t-brand-orange rounded-full animate-spin mb-3"></div>
