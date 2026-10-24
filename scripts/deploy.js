@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 // ================= Configuration =================
 const REMOTE_HOST = "root@motor-heat.duckdns.org";
-const SSH_KEY = path.join(process.env.HOME || process.env.USERPROFILE, ".ssh", "id_ed25519");
+const SSH_KEY = path.join(process.env.HOME || process.env.USERPROFILE || '', ".ssh", "id_ed25519");
 const REMOTE_WEB_DIR = "/var/www/svm/";
 const REMOTE_APP_DIR = "/opt/svm/";
 // =================================================
@@ -20,6 +20,10 @@ const DIST_DIR = path.join(PROJECT_ROOT, 'dist');
 console.log(`==> Starting deployment to ${REMOTE_HOST} (IPv4)...`);
 
 // Helper function to run shell commands cleanly
+/**
+ * @param {string} command
+ * @param {readonly string[]} args
+ */
 function runCommand(command, args) {
     const result = spawnSync(command, args, { stdio: 'inherit' });
     if (result.error) {
@@ -32,13 +36,23 @@ function runCommand(command, args) {
     }
 }
 
+// 0. Delete old public files on the server
+console.log("==> Deleting old public files on the server...");
+runCommand('ssh', [
+    '-4', // Force IPv4
+    '-i', SSH_KEY,
+    REMOTE_HOST,
+    `rm -r ${REMOTE_WEB_DIR}*`
+]);
+
+
 // 1. Copy public static files
 console.log("==> Copying public files...");
 runCommand('scp', [
     '-4', // Force IPv4
     '-i', SSH_KEY,
     '-r',
-    path.join(DIST_DIR, 'public', '.'),
+    path.join(DIST_DIR, 'public', '*'),
     `${REMOTE_HOST}:${REMOTE_WEB_DIR}`
 ]);
 
@@ -57,7 +71,7 @@ runCommand('ssh', [
     '-4', // Force IPv4
     '-i', SSH_KEY,
     REMOTE_HOST,
-    `chown -R svm:svm ${REMOTE_APP_DIR} && sv restart svm`
+    `chown -R root:svm ${REMOTE_WEB_DIR} && chmod -R 755 ${REMOTE_WEB_DIR} && chown -R svm:svm ${REMOTE_APP_DIR} && sv restart svm && sv restart nginx`
 ]);
 
 console.log("==> Deployment completed successfully!");
