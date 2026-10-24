@@ -7,10 +7,10 @@
     "test": "node --test \"tests/**/*.test.js\"",
     "test:be": "node --test \"tests/be/**/*.test.js\"",
     "test:fe": "node --test \"tests/fe/**/*.test.js\"",
-    "start": "npm run build:be && npm run build:fe && node dist/svm.js",
+    "start": "npm run build:fe && npm run build:be && node dist/svm.js",
     "build:fe": "vite build --config vite.config.fe.js",
     "build:be": "vite build --config vite.config.be.js",
-    "build": "npm install --no-audit --no-fund && npm run test && npm run build:be && npm run build:fe",
+    "build": "npm install --no-audit --no-fund && npm run test && npm run build:fe && npm run build:be",
     "dev:fe": "vite --config vite.config.fe.js",
     "dev:be": "node src/server.js",
     "check": "tsc"

@@ -1,8 +1,10 @@
 # Seasonvar Mobile UI (SolidJS)
 
-This folder is the SolidJS single-page app, served by Express or directly by
-nginx. The deployment prefix is **detected at runtime**, so the same build can
-be hosted at the root (`/`) or under any prefix (`/svm`, `/foo/bar`, ...).
+This folder is the SolidJS single-page app. It is built to static files
+(`dist/public`) which the Node server serves directly (with a SPA fallback),
+and which can also be served by nginx while the API is proxied. The deployment
+prefix is **detected at runtime**, so the same build can be hosted at the root
+(`/`) or under any prefix (`/svm`, `/foo/bar`, ...).
 It replaces the former server-rendered EJS views (`src/views` has been removed).
 
 Pages:
@@ -26,14 +28,52 @@ Pages:
 ## Commands
 
 ```bash
-npm run build:ui   # production build -> src/ui/dist (served at the root)
-npm run dev:ui     # Vite dev server with HMR
-npm start          # builds the UI (prestart) then runs Express
+npm run build:fe   # production frontend build -> dist/public
+npm run build:be   # self-contained server build -> dist/svm.js
+npm run dev:fe     # Vite dev server with HMR
+npm run dev:be     # run the Express server from source
+npm start          # build:fe + build:be, then node dist/svm.js
 
 npm test           # run all unit tests (node:test)
 npm run test:be    # backend tests only
 npm run test:fe    # frontend tests only
 ```
+
+## Self-contained server build (`node svm.js`)
+
+`npm run build:be` produces a **single file**, `dist/svm.js`, that contains the
+server plus all of its Node dependencies (express, cheerio, ...). It needs no
+`node_modules`. The UI is **not embedded** in the bundle: the server keeps
+serving the SPA from disk (`dist/public`), so build the frontend next to it:
+
+```bash
+npm run build:fe          # -> dist/public
+npm run build:be          # -> dist/svm.js (bundles server + node_modules)
+node dist/svm.js          # serves the SPA from dist/public and /api/*
+```
+
+The deployed folder is just the build output:
+
+```
+dist/
+  svm.js        # self-contained server (no node_modules needed)
+  public/       # frontend build (index.html + assets)
+```
+
+How it works:
+
+- `vite.config.be.js` sets `ssr.noExternal: true`, so every server-side
+  dependency is inlined into the output. Node built-ins stay external.
+- `src/server.js` is unchanged: it serves the SPA from
+  `join(__dirname, '..', 'dist', 'public')` (which resolves to `dist/public`
+  next to `svm.js`), with `express.static` and a SPA fallback, plus the API.
+- The server does not embed the UI, so build order is not critical;
+  `dist/public` just has to exist at runtime.
+
+> **Troubleshooting `ERR_MODULE_NOT_FOUND: Cannot find package 'express'`** —
+> the `svm.js` you ran is an old/unbundled artifact. Rebuild with
+> `npm run build:be` and copy the fresh `dist/svm.js` (and `dist/public`).
+> Check it with `grep -c '"express"' dist/svm.js` (must be `0`).
 
 ## Hosting under a prefix (`/svm`, ...)
 
@@ -83,13 +123,13 @@ server {
 }
 ```
 
-With the config above the Node server runs at the root (`node dist/svm.js`,
-no `BASE_PATH`). If the Node server is exposed directly and hosts the SPA
-itself, set `BASE_PATH` so it mounts API + static + SPA fallback under the
-prefix and redirects the bare prefix:
+With the config above nginx serves the SPA and the Node server handles the API
+at the root (`node dist/svm.js`, no `BASE_PATH`). If you expose the server
+directly instead, it serves both the SPA and the API; set `BASE_PATH` to put
+everything under a prefix:
 
 ```bash
-BASE_PATH=/svm node dist/svm.js   # http://host/svm/
+BASE_PATH=/svm node dist/svm.js   # API at http://host/svm/api
 ```
 
 ## Tests
@@ -122,7 +162,8 @@ component behaviour is covered by the production build and manual checks.
 | `/series`          | PlayerPage          | `/api/series?url=`          |
 | `/series-details`  | SeriesDetailsPage   | `/api/series-details?url=`  |
 
-Express serves `dist/index.html` for any unknown path so the client router can
+The static host must serve `dist/public/index.html` for any unknown path
+(e.g. nginx `try_files $uri $uri/ /svm/index.html`) so the client router can
 resolve deep links.
 
 ## Layout
