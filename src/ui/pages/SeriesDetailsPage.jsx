@@ -100,6 +100,17 @@ export default function SeriesDetailsPage() {
                     </Show>
 
                     <Show when={!loading() && !error() && details()}>
+                        {/* Title & Original Title */}
+                        <div>
+                            <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight mb-1">
+                                {details()?.title || '—'}
+                            </h1>
+                            <p class="text-brand-orange text-sm sm:text-base font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-film text-xs"></i>
+                                {details()?.originalName || '—'}
+                            </p>
+                        </div>
+
                         {/* Single Series Main Card */}
                         <div class="bg-brand-cardBg border border-brand-cardBorder rounded-2xl p-4 sm:p-6 shadow-2xl overflow-hidden relative">
                             {/* Card Header Tagline */}
@@ -151,16 +162,6 @@ export default function SeriesDetailsPage() {
 
                                 {/* Right Column: Structured Field Details */}
                                 <div class="md:col-span-8 space-y-4">
-                                    {/* Title & Original Title */}
-                                    <div>
-                                        <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-white leading-tight mb-1">
-                                            {details()?.title || '—'}
-                                        </h1>
-                                        <p class="text-brand-orange text-sm sm:text-base font-semibold flex items-center gap-2">
-                                            <i class="fa-solid fa-film text-xs"></i>
-                                            {details()?.originalName || '—'}
-                                        </p>
-                                    </div>
 
                                     {/* Description Box */}
                                     <div class="bg-[#121214] rounded-xl border border-brand-cardBorder p-4">
