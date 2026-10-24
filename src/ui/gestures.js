@@ -61,6 +61,29 @@ export function volumeIconFor(percent) {
 }
 
 /**
+ * @typedef {{
+ *   state: { horizontal: boolean, seekStart: number },
+ *   type: 'ignore',
+ * } | {
+ *   state: { horizontal: boolean, seekStart: number },
+ *   type: 'seek',
+ *   time: number,
+ *   delta: number,
+ * } | {
+ *   state: { horizontal: boolean, seekStart: number },
+ *   type: 'brightness',
+ *   value: number,
+ *   percent: number,
+ * } | {
+ *   state: { horizontal: boolean, seekStart: number },
+ *   type: 'volume',
+ *   value: number,
+ *   percent: number,
+ *   icon: string,
+ * }} GestureResult
+ */
+
+/**
  * Resolve one touch-move into a decision, without side effects.
  *
  * @param {{ horizontal: boolean, seekStart: number }} state
@@ -78,15 +101,7 @@ export function volumeIconFor(percent) {
  *   currentTime: number,
  *   duration: number,
  * }} input
- * @returns {{
- *   state: { horizontal: boolean, seekStart: number },
- *   type: string,
- *   time?: number,
- *   delta?: number,
- *   value?: number,
- *   percent?: number,
- *   icon?: string,
- * }}
+ * @returns {GestureResult}
  */
 export function resolveGesture(state, input) {
     // A panel owns its own gestures; never seek/adjust while it is open.

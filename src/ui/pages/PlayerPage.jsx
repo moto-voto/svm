@@ -226,7 +226,7 @@ export default function PlayerPage() {
             await video.play();
             setNeedsUnmute(false);
         } catch (err) {
-            if (shouldFallbackToMuted(err)) {
+            if (err instanceof Error && shouldFallbackToMuted(err)) {
                 try {
                     video.muted = true;
                     await video.play();
@@ -450,7 +450,7 @@ export default function PlayerPage() {
             // When a panel is open (or the touch starts inside a horizontally
             // scrollable panel), let the panel handle the gesture instead of
             // seeking / changing volume or brightness.
-            if (activePanel() || event.target.closest?.('.custom-scrollbar')) return;
+            if (activePanel() || (event.target instanceof Element && event.target.closest('.custom-scrollbar'))) return;
             const touch = event.touches[0];
             const rect = playerContainer.getBoundingClientRect();
             const x = touch.clientX - rect.left;
