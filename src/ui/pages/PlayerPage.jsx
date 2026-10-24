@@ -175,18 +175,25 @@ export default function PlayerPage() {
      * freshly loaded season list) and resume it. Because the backend only
      * returns playlists for the fetched season, a different last-played season
      * is re-fetched via `changeSeason`.
+     *
+     * When no season was explicitly requested (`season` param) and the series
+     * has no saved progress yet, playback starts from the first season instead
+     * of whatever season the fetched page marks as current — the canonical
+     * full link usually points at the latest season.
      * @param {Series} series
      */
     async function restoreSeriesProgress(series) {
         const initialIndex = selectedSeasonIndex();
         let targetIndex = initialIndex;
+        let savedLink = null;
         try {
             const record = await loadSeriesProgress(series.idSerial || seriesUrl);
-            const savedLink = resolveResumeSeasonLink(record, series.seasons);
+            savedLink = resolveResumeSeasonLink(record, series.seasons);
             if (savedLink) targetIndex = findSeasonIndexByLink(series.seasons, savedLink, initialIndex);
         } catch {
-            // Ignore storage failures and resume the initially loaded season.
+            // Ignore storage failures and fall back to the defaults below.
         }
+        if (!savedLink && !seasonParam) targetIndex = 0;
         if (targetIndex !== initialIndex) await changeSeason(targetIndex);
         else await restoreSeasonProgress();
     }
