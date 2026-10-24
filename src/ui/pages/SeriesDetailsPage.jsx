@@ -1,8 +1,9 @@
 import { createSignal, createEffect, onMount, Show } from 'solid-js';
 import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeriesDetails } from '../api.js';
+import { loadSeriesProgress } from '../watch-progress.js';
 import Header from '../components/Header.jsx';
-import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating } from '../series-details.js';
+import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating, buildPlayerHref } from '../series-details.js';
 
 export default function SeriesDetailsPage() {
     const [searchParams] = useSearchParams();
@@ -14,6 +15,7 @@ export default function SeriesDetailsPage() {
     const [loading, setLoading] = createSignal(true);
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
     const [posterSrc, setPosterSrc] = createSignal('');
+    const [lastSeasonLink, setLastSeasonLink] = createSignal('');
 
     onMount(async () => {
         if (!seriesUrl) {
@@ -22,7 +24,15 @@ export default function SeriesDetailsPage() {
             return;
         }
         try {
-            setDetails(await fetchSeriesDetails(seriesUrl));
+            const loaded = await fetchSeriesDetails(seriesUrl);
+            setDetails(loaded);
+            // Resume the player on the series' last played season.
+            const playerUrl = loaded?.fullLink || seriesUrl;
+            const seriesId = loaded?.idSerial || playerUrl;
+            if (seriesId) {
+                const record = await loadSeriesProgress(seriesId);
+                setLastSeasonLink(record?.lastSeasonLink || '');
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -67,7 +77,7 @@ export default function SeriesDetailsPage() {
                                 }
                             >
                                 <A
-                                    href={`/series?url=${encodeURIComponent(details()?.fullLink || seriesUrl)}`}
+                                    href={buildPlayerHref(details()?.fullLink || seriesUrl, lastSeasonLink())}
                                     class="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold text-sm py-2.5 px-4 rounded-lg shadow-lg transition-all duration-200 active:scale-95 shrink-0"
                                 >
                                     <i class="fa-solid fa-play text-black text-sm"></i>

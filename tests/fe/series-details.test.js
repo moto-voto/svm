@@ -6,6 +6,7 @@ import {
     buildPosterFallback,
     formatSeasonsLabel,
     formatRating,
+    buildPlayerHref,
     RATING_FALLBACK,
     PLACEHOLDER_POSTER,
 } from '../../src/ui/series-details.js';
@@ -42,4 +43,19 @@ test('formatRating falls back when missing', () => {
     assert.equal(formatRating(''), RATING_FALLBACK);
     assert.equal(formatRating(null), RATING_FALLBACK);
     assert.equal(formatRating(undefined), RATING_FALLBACK);
+});
+
+test('buildPlayerHref builds a player link with the series url', () => {
+    assert.equal(
+        buildPlayerHref('https://seasonvar.ru/serial-1.html'),
+        '/series?url=https%3A%2F%2Fseasonvar.ru%2Fserial-1.html'
+    );
+});
+
+test('buildPlayerHref appends the last played season when provided', () => {
+    assert.equal(
+        buildPlayerHref('https://seasonvar.ru/serial-1.html', 'https://seasonvar.ru/serial-1/2-season.html'),
+        '/series?url=https%3A%2F%2Fseasonvar.ru%2Fserial-1.html&season=https%3A%2F%2Fseasonvar.ru%2Fserial-1%2F2-season.html'
+    );
+    assert.equal(buildPlayerHref('', ''), '/series?url=');
 });

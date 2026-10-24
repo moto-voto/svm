@@ -97,6 +97,7 @@ export function seriesWithTranslations() {
 
     const html = `
 <html><body>
+  <div class="pgs-sinfo" data-id-season="43004-season" data-id-serial="43004"></div>
   <div class="pgs-seaslist">
     <div class="tabs-result">
       <a href="/s1.html">>>>Сезон 1 01.01.2024 8 серий</a>

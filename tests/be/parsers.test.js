@@ -53,6 +53,7 @@ test('parseSeriesDetails extracts every field', () => {
 
     assert.deepEqual(details, {
         id: '43004-season',
+        idSerial: '43004',
         title: 'Test Series (не)Пара',
         fullLink: 'https://seasonvar.ru/serial-43004-test.html',
         image: '//cdn.svstat.net/oblojka/43004.jpg',
@@ -101,6 +102,7 @@ test('parseSeries loads translations/playlists', async () => {
     try {
         const series = await parseSeries(html, TARGET);
 
+        assert.equal(series.idSerial, '43004');
         assert.equal(series.seasons.length, 1);
         assert.equal(series.seasons[0].isCurrent, true);
 

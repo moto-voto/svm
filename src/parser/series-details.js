@@ -4,6 +4,7 @@ import { load } from "cheerio";
 /**
  * @typedef SeriesDetails
  * @property {string} id
+ * @property {string} idSerial
  * @property {string} title
  * @property {string} fullLink
  * @property {string} image
@@ -28,7 +29,7 @@ export function parseSeriesDetails(html) {
     // Container with attributes id-season and id-serial
     const sinfoEl = $('.pgs-sinfo');
     const idSeason = sinfoEl.attr('data-id-season') || '';
-    const idSerial = sinfoEl.attr('data-id-serial') || '';
+    const idSerial = sinfoEl.attr('data-id-serial') || idSeason || '';
     // Construct a composite or main ID if needed; using season-serial or just id-season
     const id = idSeason || idSerial || '';
 
@@ -114,6 +115,7 @@ export function parseSeriesDetails(html) {
 
     return {
         id,
+        idSerial,
         title,
         fullLink,
         image: image,

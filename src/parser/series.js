@@ -13,6 +13,7 @@ import { parsePlaylistTranslations } from "./playlists.js"
 
 /**
  * @typedef Series
+ * @property {string} idSerial
  * @property {SeasonLink[]} seasons
  * @property {PlaylistTranslation[]} currentSeasonPlaylists
  */
@@ -25,6 +26,9 @@ import { parsePlaylistTranslations } from "./playlists.js"
 
 export async function parseSeries(htmlContent, targetUrl) {
     const $ = load(htmlContent);
+
+    const sinfoEl = $('.pgs-sinfo');
+    const idSerial = sinfoEl.attr('data-id-serial') || sinfoEl.attr('data-id-season') || '';
 
     /** @type {SeasonLink[]} */
     const seasons = [];
@@ -59,6 +63,7 @@ export async function parseSeries(htmlContent, targetUrl) {
     const playlist = await parsePlaylistTranslations(htmlContent);
     
     return {
+        idSerial,
         seasons: seasons,
         currentSeasonPlaylists: playlist
     }

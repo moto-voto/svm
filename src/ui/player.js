@@ -27,6 +27,18 @@ export function findCurrentSeasonIndex(seasons, fallback = 0) {
     return index !== -1 ? index : fallback;
 }
 
+/**
+ * Index of the season whose link matches `link`, or `fallback` when none match.
+ * @param {{ link?: string }[]} seasons
+ * @param {string} link
+ * @param {number} fallback
+ */
+export function findSeasonIndexByLink(seasons, link, fallback = 0) {
+    if (!link) return fallback;
+    const index = (seasons || []).findIndex((season) => season && season.link === link);
+    return index !== -1 ? index : fallback;
+}
+
 /** Keep an episode index valid after switching translations. */
 export function clampEpisodeIndex(index, length) {
     return index >= length ? 0 : index;

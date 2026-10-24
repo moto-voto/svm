@@ -26,3 +26,15 @@ export function formatSeasonsLabel(seasons) {
 export function formatRating(value) {
     return value || RATING_FALLBACK;
 }
+
+/**
+ * Build the client-side player link, optionally pointing at a specific season
+ * so the player loads that season's episodes directly.
+ * @param {string} seriesUrl
+ * @param {string} [seasonLink]
+ */
+export function buildPlayerHref(seriesUrl, seasonLink) {
+    const url = encodeURIComponent(seriesUrl || '');
+    const season = seasonLink ? `&season=${encodeURIComponent(seasonLink)}` : '';
+    return `/series?url=${url}${season}`;
+}

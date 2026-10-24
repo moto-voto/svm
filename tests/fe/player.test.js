@@ -6,6 +6,7 @@ import {
     seekTimeFromPercent,
     shouldFallbackToMuted,
     findCurrentSeasonIndex,
+    findSeasonIndexByLink,
     clampEpisodeIndex,
     episodeCount,
     brightnessOverlayColor,
@@ -47,6 +48,15 @@ test('findCurrentSeasonIndex finds the current season or uses the fallback', () 
     assert.equal(findCurrentSeasonIndex([{ isCurrent: false }], 2), 2);
     assert.equal(findCurrentSeasonIndex([], 0), 0);
     assert.equal(findCurrentSeasonIndex(undefined), 0);
+});
+
+test('findSeasonIndexByLink matches a season link or falls back', () => {
+    const seasons = [{ link: 'a' }, { link: 'b' }, { link: 'c' }];
+    assert.equal(findSeasonIndexByLink(seasons, 'b'), 1);
+    assert.equal(findSeasonIndexByLink(seasons, 'c', 0), 2);
+    assert.equal(findSeasonIndexByLink(seasons, 'missing', 2), 2);
+    assert.equal(findSeasonIndexByLink(seasons, '', 1), 1);
+    assert.equal(findSeasonIndexByLink(undefined, 'b', 3), 3);
 });
 
 test('clampEpisodeIndex resets to 0 when out of range', () => {

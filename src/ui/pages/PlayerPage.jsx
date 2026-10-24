@@ -4,10 +4,20 @@ import { fetchSeries } from '../api.js';
 import { cleanTitle, formatTime } from '../utils.js';
 import { resolveGesture, resetGestureState, GESTURE_TYPES } from '../gestures.js';
 import {
+    loadSeasonProgress,
+    saveEpisodeProgress,
+    loadSeriesProgress,
+    saveSeriesProgress,
+    resolveResumeState,
+    resolveResumeSeasonLink,
+    PROGRESS_SAVE_INTERVAL_MS,
+} from '../watch-progress.js';
+import {
     progressPercent,
     seekTimeFromPercent,
     shouldFallbackToMuted,
     findCurrentSeasonIndex,
+    findSeasonIndexByLink,
     clampEpisodeIndex,
     episodeCount,
     brightnessOverlayColor,
@@ -23,6 +33,7 @@ import './player.css';
 export default function PlayerPage() {
     const [searchParams] = useSearchParams();
     const seriesUrl = String(searchParams.url || '');
+    const seasonParam = String(searchParams.season || '');
 
     /** @type {HTMLVideoElement | undefined} */
     let video;
@@ -49,6 +60,10 @@ export default function PlayerPage() {
     const [loader, setLoader] = createSignal({ visible: false, title: '', subtitle: '' });
 
     let pendingSeek = 0;
+    let progressReady = false;
+    let suppressPersist = false;
+    let switchingEpisode = false;
+    let lastPersistedAt = 0;
     /** @type {ReturnType<typeof setTimeout> | undefined} */
     let controlsTimeout;
     /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -84,15 +99,106 @@ export default function PlayerPage() {
         setControlsVisible(false);
     }
 
+    // ---- Watch progress (IndexedDB) ----
+
+    /**
+     * Stable series identity used as the watch-progress key. Prefers the
+     * serial id parsed from the page, falling back to the series URL.
+     */
+    function seriesKey() {
+        return payload()?.idSerial || seriesUrl;
+    }
+
+    /**
+     * Flush the current playback position to IndexedDB. `force` bypasses the
+     * `timeupdate` throttle (used on pause, episode switch, page hide, ...).
+     */
+    function persistProgress(force = false, episodeIndex = currentEpisodeIndex(), position = video?.currentTime || 0) {
+        if (!progressReady || suppressPersist) return;
+        const season = currentSeason();
+        if (!season) return;
+        const now = Date.now();
+        if (!force && now - lastPersistedAt < PROGRESS_SAVE_INTERVAL_MS) return;
+        lastPersistedAt = now;
+        saveEpisodeProgress(seriesKey(), season.link, episodeIndex, position).catch(() => {});
+    }
+
+    /**
+     * Remember the season currently being watched for the series.
+     * @param {string} seasonLink
+     */
+    function persistSeriesProgress(seasonLink) {
+        if (!seasonLink) return;
+        saveSeriesProgress(seriesKey(), seasonLink).catch(() => {});
+    }
+
+    /**
+     * Resume the current season from the last played episode/position. Falls
+     * back to the first episode when no (valid) record exists.
+     */
+    async function restoreSeasonProgress() {
+        const season = currentSeason();
+        if (!season) {
+            progressReady = true;
+            return;
+        }
+        persistSeriesProgress(season.link);
+        if (activePlaylist().length === 0) {
+            progressReady = true;
+            queueMicrotask(() => loadEpisode(0, true, 0));
+            return;
+        }
+        let state = { episodeIndex: 0, position: 0 };
+        try {
+            const record = await loadSeasonProgress(seriesKey(), season.link);
+            state = resolveResumeState(record, activePlaylist().length);
+        } catch {
+            // Ignore storage failures and start from the beginning.
+        }
+        suppressPersist = true;
+        try {
+            loadEpisode(state.episodeIndex, true, state.position);
+        } finally {
+            suppressPersist = false;
+            progressReady = true;
+        }
+    }
+
+    /**
+     * Restore the last played season for a series (validated against the
+     * freshly loaded season list) and resume it. Because the backend only
+     * returns playlists for the fetched season, a different last-played season
+     * is re-fetched via `changeSeason`.
+     * @param {import('../../parser/series.js').Series} series
+     */
+    async function restoreSeriesProgress(series) {
+        const initialIndex = selectedSeasonIndex();
+        let targetIndex = initialIndex;
+        try {
+            const record = await loadSeriesProgress(series.idSerial || seriesUrl);
+            const savedLink = resolveResumeSeasonLink(record, series.seasons);
+            if (savedLink) targetIndex = findSeasonIndexByLink(series.seasons, savedLink, initialIndex);
+        } catch {
+            // Ignore storage failures and resume the initially loaded season.
+        }
+        if (targetIndex !== initialIndex) await changeSeason(targetIndex);
+        else await restoreSeasonProgress();
+    }
+
     // ---- Playback ----
 
     function loadEpisode(epIdx, autoPlay = true, startTime = 0) {
         const ep = activePlaylist()[epIdx];
         if (!ep || !ep.file || !video) return;
+        // Persist the episode we are leaving before switching.
+        if (epIdx !== currentEpisodeIndex()) persistProgress(true);
         setCurrentEpisodeIndex(epIdx);
         pendingSeek = startTime;
+        switchingEpisode = true;
         video.src = ep.file;
         video.load();
+        // Mark the newly loaded episode as the season's last played one.
+        persistProgress(true, epIdx, startTime);
         if (autoPlay) startPlayback();
     }
 
@@ -181,13 +287,14 @@ export default function PlayerPage() {
         if (!target) return;
 
         setLoader({ visible: true, title: `Loading ${cleanTitle(target.title)}...`, subtitle: 'Fetching playlist' });
+        persistProgress(true);
         try {
             const series = await fetchSeries(target.link);
             setPayload(series);
-            setSelectedSeasonIndex(findCurrentSeasonIndex(series.seasons, index));
+            setSelectedSeasonIndex(findSeasonIndexByLink(series.seasons, target.link, findCurrentSeasonIndex(series.seasons, index)));
             setSelectedTranslationIndex(0);
             setCurrentEpisodeIndex(0);
-            queueMicrotask(() => loadEpisode(0, true, 0));
+            await restoreSeasonProgress();
         } catch {
             showOSD('fa-triangle-exclamation', 'Failed to load', 'Season');
         } finally {
@@ -236,6 +343,7 @@ export default function PlayerPage() {
 
     function onLoadedMetadata() {
         if (!video) return;
+        switchingEpisode = false;
         setDuration(video.duration || 0);
         if (pendingSeek > 0) {
             video.currentTime = pendingSeek;
@@ -244,7 +352,9 @@ export default function PlayerPage() {
     }
 
     function onTimeUpdate() {
-        if (video) setCurrentTime(video.currentTime || 0);
+        if (!video) return;
+        setCurrentTime(video.currentTime || 0);
+        persistProgress(false);
     }
 
     function onSeekInput(event) {
@@ -296,6 +406,12 @@ export default function PlayerPage() {
 
         // Fullscreen state
         const onFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+
+        // Persist when the page is backgrounded/closed.
+        const onPageHide = () => persistProgress(true);
+        const onVisibilityChange = () => {
+            if (document.hidden) persistProgress(true);
+        };
 
         // Touch gestures (left = brightness, right = volume, horizontal = seek)
         let activeSide = /** @type {'left' | 'right' | null} */ (null);
@@ -370,6 +486,8 @@ export default function PlayerPage() {
         document.addEventListener('pointerdown', unlockAudio);
         document.addEventListener('keydown', unlockAudio);
         document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        window.addEventListener('pagehide', onPageHide);
         playerContainer?.addEventListener('touchstart', onTouchStart, { passive: true });
         playerContainer?.addEventListener('touchmove', onTouchMove, { passive: true });
         playerContainer?.addEventListener('touchend', onTouchEnd);
@@ -380,6 +498,9 @@ export default function PlayerPage() {
             document.removeEventListener('pointerdown', unlockAudio);
             document.removeEventListener('keydown', unlockAudio);
             document.removeEventListener('fullscreenchange', onFullscreenChange);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+            window.removeEventListener('pagehide', onPageHide);
+            persistProgress(true);
             playerContainer?.removeEventListener('touchstart', onTouchStart);
             playerContainer?.removeEventListener('touchmove', onTouchMove);
             playerContainer?.removeEventListener('touchend', onTouchEnd);
@@ -394,12 +515,24 @@ export default function PlayerPage() {
             return;
         }
         try {
-            const series = await fetchSeries(seriesUrl);
+            // The details page may pass the last played season so we can load
+            // its episodes directly instead of the season the link opened on.
+            let requestedUrl = seasonParam || seriesUrl;
+            let series;
+            try {
+                series = await fetchSeries(requestedUrl);
+            } catch (err) {
+                if (requestedUrl === seriesUrl) throw err;
+                requestedUrl = seriesUrl;
+                series = await fetchSeries(requestedUrl);
+            }
             setPayload(series);
-            setSelectedSeasonIndex(findCurrentSeasonIndex(series.seasons, 0));
+            setSelectedSeasonIndex(
+                findSeasonIndexByLink(series.seasons, requestedUrl, findCurrentSeasonIndex(series.seasons, 0))
+            );
             setSelectedTranslationIndex(0);
             setCurrentEpisodeIndex(0);
-            queueMicrotask(() => loadEpisode(0, true, 0));
+            await restoreSeriesProgress(series);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {
@@ -422,7 +555,10 @@ export default function PlayerPage() {
                     onTimeUpdate={onTimeUpdate}
                     onLoadedMetadata={onLoadedMetadata}
                     onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
+                    onPause={() => {
+                        setIsPlaying(false);
+                        if (!switchingEpisode) persistProgress(true);
+                    }}
                     onEnded={() => {
                         setIsPlaying(false);
                         playNextEpisode();

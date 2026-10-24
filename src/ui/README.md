@@ -46,6 +46,7 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
   - `src/ui/grid-layout.js` (virtualized-grid math + stats label)
   - `src/ui/gestures.js` (`resolveGesture` touch decision logic)
   - `src/ui/player.js` (progress/seek, tap/keyboard decisions, index helpers)
+  - `src/ui/watch-progress.js` (IndexedDB watch-progress keys/resume/merge helpers)
   - `src/ui/series-details.js` (poster/rating/label formatting)
 
 Note: Solid *component* tests would require a DOM environment plus a JSX
@@ -75,6 +76,7 @@ src/ui/
 ├── utils.js                    # clamp, normalizeQuery, cleanTitle, formatTime
 ├── gestures.js                 # resolveGesture (touch decision logic)
 ├── player.js                   # player display/index/keyboard/tap helpers
+├── watch-progress.js            # IndexedDB watch-progress persistence
 ├── series-details.js           # series-details display helpers
 ├── grid-layout.js              # virtualized-grid layout math
 ├── styles.css                  # global styles (search page / shared)
