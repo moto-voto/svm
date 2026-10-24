@@ -77,10 +77,11 @@ app.get('/api/series-details', async (req, res) => {
     }
 });
 
-// ---- SolidJS SPA (built by `npm run build:ui` into src/ui/dist) ----
+// ---- SolidJS SPA (built by `npm run build:ui` into dist/public) ----
 
-const UI_DIST = join(__dirname, 'ui', 'dist');
+const UI_DIST = join(__dirname, '..', 'dist', 'public');
 app.use(express.static(UI_DIST));
+
 // SPA fallback: unknown paths render the app so the client router can handle them.
 app.use((_req, res) => {
     res.sendFile(join(UI_DIST, 'index.html'));
@@ -91,3 +92,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     log('log', `✅ Server running at http://localhost:${PORT}`);
 });
+
