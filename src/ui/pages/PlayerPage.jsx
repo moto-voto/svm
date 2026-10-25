@@ -724,15 +724,6 @@ export default function PlayerPage() {
                             <button
                                 type="button"
                                 class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors"
-                                title="Toggle Orientation"
-                                onClick={() => showOSD('fa-rotate', 'Screen Rotated')}
-                            >
-                                <i class="fa-solid fa-rotate text-lg"></i>
-                            </button>
-
-                            <button
-                                type="button"
-                                class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors"
                                 title="Seasons"
                                 onClick={(e) => {
                                     e.stopPropagation();
