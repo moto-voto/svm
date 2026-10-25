@@ -9,7 +9,10 @@ It replaces the former server-rendered EJS views (`src/views` has been removed).
 
 Pages:
 
-- `pages/SearchPage.jsx` — virtualized poster grid (formerly `index.ejs`)
+- `pages/SearchPage.jsx` — virtualized poster grid (formerly `index.ejs`); keeps
+  `?q=` in the URL and restores the last search (in-memory, survives client-side
+  navigation) without a new request when returning from `SeriesDetailsPage`;
+  a reload intentionally starts fresh — the URL query is the durable state
 - `pages/PlayerPage.jsx` — MX-Player style video player (formerly `player.ejs`)
 - `pages/SeriesDetailsPage.jsx` — series details card (formerly `series-details.ejs`)
 
@@ -147,6 +150,7 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
   - `src/ui/player.js` (progress/seek, tap/keyboard decisions, index helpers)
   - `src/ui/watch-progress.js` (IndexedDB watch-progress keys/resume/merge helpers)
   - `src/ui/series-details.js` (poster/rating/label formatting)
+  - `src/ui/search-state.js` (in-memory last-search store + restore/no-refetch decision)
 
 Note: Solid *component* tests would require a DOM environment plus a JSX
 transform (e.g. `@solidjs/testing-library` + `happy-dom`), so frontend logic is
@@ -178,6 +182,7 @@ src/ui/
 ├── player.js                   # player display/index/keyboard/tap helpers
 ├── watch-progress.js            # IndexedDB watch-progress persistence
 ├── series-details.js           # series-details display helpers
+├── search-state.js             # in-memory search state (back-nav restore)
 ├── grid-layout.js              # virtualized-grid layout math
 ├── styles.css                  # global styles (search page / shared)
 ├── pages/

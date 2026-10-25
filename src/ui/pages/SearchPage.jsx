@@ -1,115 +1,74 @@
-import { createSignal, createEffect, onMount, Show } from 'solid-js';
-import { useSearchParams, A } from '@solidjs/router';
+import { createSignal, onMount, Show } from 'solid-js';
+import { useSearchParams } from '@solidjs/router';
 import Header from '../components/Header.jsx';
 import VirtualGrid from '../components/VirtualGrid.jsx';
 import { searchSeries } from '../api.js';
 import { normalizeQuery } from '../utils.js';
-
-/** @import { SerialDescription } from '../../parser/search.js' */
-
-/** 
- * @typedef {Object} SearchState
- * @property {SerialDescription[]} items
- * @property {string} stats
- * @property {string} query
- * @property {boolean} loading
- * @property {number} timestamp
- */
-
-const STORAGE_KEY = 'svm_search_state';
-const MAX_AGE = 10 * 60 * 1000; // 10 minutes
-
-/**
- * 
- * @returns { SearchState | null }
- */
-function getStoredState() {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (!stored) return null;
-        const data = JSON.parse(stored);
-        if (Date.now() - data.timestamp > MAX_AGE) return null;
-        return data;
-    } catch {
-        return null;
-    }
-}
-
-/**
- * @param {SerialDescription[]} items
- * @param {string} stats
- * @param {string} query
- * @param {boolean} loading
- */
-function saveState(items, stats, query, loading) {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            items,
-            stats,
-            query,
-            loading,
-            timestamp: Date.now()
-        }));
-    } catch {}
-}
+import { getStoredSearchState, saveSearchState, resolveSearchRestore } from '../search-state.js';
 
 export default function SearchPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const initialQuery = normalizeQuery(Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q || '');
+    const urlQuery = normalizeQuery(Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q || '');
 
-    // Load persisted state from localStorage (survives navigation to SeriesDetailsPage)
-    const stored = getStoredState();
-    const persistedItems = stored?.items;
-    const persistedStats = stored?.stats;
-    const persistedLoading = stored?.loading;
-    const persistedQuery = stored?.query;
+    // Restore the previous search from the in-memory store (survives
+    // navigating to SeriesDetailsPage and back, but not a reload — the `?q=`
+    // URL parameter is the durable state). The URL query wins over the stored
+    // one, so shareable `/?q=...` links always search what the URL says.
+    const stored = getStoredSearchState();
+    const { query: effectiveQuery, restored: restoredState } = resolveSearchRestore(urlQuery, stored);
 
-    const [items, setItems] = createSignal(persistedItems || []);
-    const [loading, setLoading] = createSignal(persistedLoading !== undefined ? persistedLoading : true);
-    const [error, setError] = createSignal(persistedStats !== undefined ? null : /** @type {string | null} */ (null));
-    const [stats, setStats] = createSignal(persistedStats || '0 / 0');
+    const [items, setItems] = createSignal(restoredState ? restoredState.items : []);
+    const [loading, setLoading] = createSignal(!restoredState);
+    const [error, setError] = createSignal(/** @type {string | null} */ (null));
+    const [stats, setStats] = createSignal(restoredState ? restoredState.stats : '0 / 0');
 
-    // Search input is page-owned now (Header only hosts the markup).
-    const [query, setQuery] = createSignal(persistedQuery || initialQuery);
+    // `query` is the search input value; `activeQuery` is the query the
+    // currently displayed results belong to (they diverge while the user
+    // types a new search). Both start from the effective query.
+    const [query, setQuery] = createSignal(effectiveQuery);
+    const [activeQuery, setActiveQuery] = createSignal(effectiveQuery);
 
     /** @param {SubmitEvent} event */
     const handleSubmit = (event) => {
         event.preventDefault();
-        load(normalizeQuery(query()));
+        const q = normalizeQuery(query());
+        setQuery(q);
+        load(q);
     };
 
     /**
-     * Load results for a query from the backend.
+     * Load results for a query from the backend and keep the URL shareable.
      * @param {string} q
      */
     const load = async (q) => {
-        // Only reload if query changed or no persisted state
-        if (persistedItems && q === initialQuery && !!q ) {
-            return; // Don't reload, use persisted state
-        }
-
         setLoading(true);
         setError(null);
+        setActiveQuery(q);
 
         // Keep the URL shareable/bookmarkable.
         setSearchParams({ q: q || undefined }, { replace: true });
 
         try {
-            setItems(await searchSeries(q));
+            const results = await searchSeries(q);
+            setItems(results);
+            saveSearchState({ items: results, stats: stats(), query: q });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error: ' + String(err));
             setItems([]);
+            // Keep the previous stored state: it belongs to another query, so
+            // a later visit will mismatch and refetch instead of showing junk.
         } finally {
             setLoading(false);
-            // Persist state when query changes
-            saveState(items(), stats(), query(), loading());
         }
     };
 
     onMount(() => {
-        // Only load from API if we don't have persisted state and no URL query
-        if (!persistedItems && !initialQuery) {
-            load(initialQuery);
+        // Reflect the effective query in the address bar even when the
+        // results were restored from the in-memory store (e.g. back navigation
+        // from SeriesDetailsPage lands on `/` without `?q=`).
+        setSearchParams({ q: effectiveQuery || undefined }, { replace: true });
+        if (!restoredState) {
+            load(effectiveQuery);
         }
     });
 
@@ -167,9 +126,15 @@ export default function SearchPage() {
                 </Show>
 
                 {/* Virtual Canvas Container (grows to full dataset height) */}
-                <VirtualGrid items={items()} onStats={(stats) => {
-                    setStats(stats);
-                    saveState(items(), stats, query(), loading());
+                <VirtualGrid items={items()} onStats={(newStats) => {
+                    setStats(newStats);
+                    // Only persist settled, successful results; while a load
+                    // is in flight (or failed) the stored state must keep
+                    // belonging to the previous query so a later visit
+                    // refetches instead of restoring junk.
+                    if (!loading() && !error()) {
+                        saveSearchState({ items: items(), stats: newStats, query: activeQuery() });
+                    }
                 }} />
             </main>
         </div>
