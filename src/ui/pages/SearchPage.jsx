@@ -84,7 +84,7 @@ export default function SearchPage() {
      */
     const load = async (q) => {
         // Only reload if query changed or no persisted state
-        if (persistedItems && q === initialQuery) {
+        if (persistedItems && q === initialQuery && !!q ) {
             return; // Don't reload, use persisted state
         }
 
