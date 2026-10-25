@@ -19,7 +19,6 @@ import {
     findCurrentSeasonIndex,
     findSeasonIndexByLink,
     clampEpisodeIndex,
-    episodeCount,
     brightnessOverlayColor,
     resolveTapAction,
     TAP_ACTIONS,
@@ -29,6 +28,8 @@ import {
     VOLUME_STEP,
 } from '../player.js';
 import './player.css';
+import OverlayPanel from '../components/OverlayPanel.jsx';
+import ThumbCard from '../components/ThumbCard.jsx';
 
 /** @import { Series } from '../../parser/series.js' */
 
@@ -83,8 +84,8 @@ export default function PlayerPage() {
 
     /**
      * Remove quality indicators (SD, HD, 1080p, etc.) from episode titles.
-     * @param {string | undefined} title
-     * @returns {string | undefined}
+     * @param {string} title
+     * @returns {string}
      */
     function cleanEpisodeTitle(title) {
         if (!title) return title;
@@ -711,7 +712,7 @@ export default function PlayerPage() {
                             </A>
                             <div class="flex flex-col">
                                 <h1 class="text-sm sm:text-base font-semibold truncate max-w-[180px] sm:max-w-md text-gray-100">
-                                    {cleanEpisodeTitle(currentEpisode()?.title) || '—'}
+                                    {cleanEpisodeTitle(currentEpisode()?.title || '') || '—'}
                                 </h1>
                                 <span class="text-xs text-gray-400">
                                     {cleanTitle(currentSeason()?.title)} • {currentTranslationName()}
@@ -758,154 +759,90 @@ export default function PlayerPage() {
                     {/* Center Panels */}
                     <div class="flex-1 w-full min-h-0 flex flex-col justify-center pointer-events-none">
                         {/* Episodes Panel */}
-                        <div
-                            class="w-full pointer-events-auto"
-                            classList={{ hidden: activePanel() !== 'episodes' }}
+                        <OverlayPanel
+                            title="Episodes"
+                            count={`${activePlaylist().length} available`}
+                            open={activePanel() === 'episodes'}
+                            onClose={closePanels}
                         >
-                            <div class="flex items-center justify-between mb-2 px-1">
-                                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Episodes</h3>
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-xs text-blue-400 font-semibold">{activePlaylist().length} available</span>
-                                    <button type="button" class="text-gray-400 hover:text-white p-2 transition-colors" title="Close" onClick={closePanels}>
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex items-stretch gap-3 overflow-x-auto custom-scrollbar pb-2">
-                                <For each={activePlaylist()}>
-                                    {(ep, index) => {
-                                        const playing = () => index() === currentEpisodeIndex();
-                                        return (
-                                            <div
-                                                class="flex-shrink-0 w-40 sm:w-52 cursor-pointer group/ep"
-                                                onClick={() => {
-                                                    loadEpisode(index(), true, 0);
-                                                    closePanels();
-                                                }}
-                                            >
-                                                <div
-                                                    class="relative h-24 sm:h-28 rounded-xl overflow-hidden border transition-all flex items-center justify-center"
-                                                    classList={{
-                                                        'border-blue-500/70 bg-blue-600/25': playing(),
-                                                        'border-white/10 bg-black/30 group-hover/ep:bg-white/10 group-hover/ep:border-white/25': !playing(),
-                                                    }}
-                                                >
-                                                    <i
-                                                        class={`fa-solid ${playing() ? 'fa-circle-play text-blue-400' : 'fa-film text-gray-400'} text-3xl`}
-                                                    ></i>
-                                                    <span class="absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-gray-200">
-                                                        E{index() + 1}
-                                                    </span>
-                                                    <Show when={playing()}>
-                                                        <span class="absolute bottom-1 right-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-600 text-white">
-                                                            Playing
-                                                        </span>
-                                                    </Show>
-                                                </div>
-                                                <p
-                                                    class="text-xs font-semibold truncate mt-1.5"
-                                                    classList={{ 'text-blue-300': playing(), 'text-gray-200': !playing() }}
-                                                >
-                                                    {cleanEpisodeTitle(ep.title)}
-                                                </p>
-                                            </div>
-                                        );
-                                    }}
-                                </For>
-                                <Show when={activePlaylist().length === 0}>
-                                    <div class="text-xs text-gray-400 py-4">No episodes found for this translation.</div>
-                                </Show>
-                            </div>
-                        </div>
+                            <For each={activePlaylist()}>
+                                {(ep, index) => (
+                                    <ThumbCard
+                                        badge={`E${String(index() + 1).padStart(2, '0')}`}
+                                        title={cleanEpisodeTitle(ep.title)}
+                                        active={index() === currentEpisodeIndex()}
+                                        activeLabel="Playing"
+                                        activeIcon="fa-circle-play"
+                                        idleIcon="fa-film"
+                                        onClick={() => {
+                                            loadEpisode(index(), true, 0);
+                                            closePanels();
+                                        }}
+                                    />
+                                )}
+                            </For>
+                            <Show when={activePlaylist().length === 0}>
+                                <div class="text-xs text-gray-400 py-4">No episodes found for this translation.</div>
+                            </Show>
+                        </OverlayPanel>
 
                         {/* Translations Panel */}
-                        <div
-                            class="w-full pointer-events-auto"
-                            classList={{ hidden: activePanel() !== 'translations' }}
+                        <OverlayPanel
+                            title="Translations"
+                            count={`${translations().length} available`}
+                            open={activePanel() === 'translations'}
+                            onClose={closePanels}
                         >
-                            <div class="flex items-center justify-between mb-2 px-1">
-                                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Translations</h3>
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-[10px] text-blue-400 font-semibold">{translations().length} available</span>
-                                    <button type="button" class="text-gray-400 hover:text-white p-0.5 transition-colors" title="Close" onClick={closePanels}>
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex items-stretch gap-3 overflow-x-auto custom-scrollbar pb-2">
-                                <For each={translations()}>
-                                    {(trans, index) => {
-                                        const active = () => index() === selectedTranslationIndex();
-                                        return (
-                                            <div
-                                                class="flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm"
-                                                classList={{
-                                                    'bg-blue-600/30 border-blue-500/60 text-white': active(),
-                                                    'bg-black/30 border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/20': !active(),
-                                                }}
-                                                onClick={() => selectTranslation(index())}
-                                            >
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <i class={`fa-solid ${active() ? 'fa-circle-check text-blue-400' : 'fa-language text-gray-400'}`}></i>
-                                                    <span class="text-[10px] text-gray-400">{trans.plist.length} eps</span>
-                                                </div>
-                                                <p class="text-xs font-semibold truncate text-gray-100">{trans.translation}</p>
+                            <For each={translations()}>
+                                {(trans, index) => {
+                                    const active = () => index() === selectedTranslationIndex();
+                                    return (
+                                        <div
+                                            class="flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm"
+                                            classList={{
+                                                'bg-blue-600/30 border-blue-500/60 text-white': active(),
+                                                'bg-black/30 border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/20': !active(),
+                                            }}
+                                            onClick={() => selectTranslation(index())}
+                                        >
+                                            <div class="flex items-center justify-between mb-2">
+                                                <i class={`fa-solid ${active() ? 'fa-circle-check text-blue-400' : 'fa-language text-gray-400'}`}></i>
+                                                <span class="text-[10px] text-gray-400">{trans.plist.length} eps</span>
                                             </div>
-                                        );
-                                    }}
-                                </For>
-                                <Show when={translations().length === 0}>
-                                    <div class="text-xs text-gray-400 py-4">No translations found.</div>
-                                </Show>
-                            </div>
-                        </div>
+                                            <p class="text-xs font-semibold truncate text-gray-100">{trans.translation}</p>
+                                        </div>
+                                    );
+                                }}
+                            </For>
+                            <Show when={translations().length === 0}>
+                                <div class="text-xs text-gray-400 py-4">No translations found.</div>
+                            </Show>
+                        </OverlayPanel>
 
                         {/* Seasons Panel */}
-                        <div
-                            class="w-full pointer-events-auto"
-                            classList={{ hidden: activePanel() !== 'seasons' }}
+                        <OverlayPanel
+                            title="Seasons"
+                            count={`${seasons().length} seasons`}
+                            open={activePanel() === 'seasons'}
+                            onClose={closePanels}
                         >
-                            <div class="flex items-center justify-between mb-2 px-1">
-                                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Seasons</h3>
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-xs text-blue-400 font-semibold">{seasons().length} seasons</span>
-                                    <button type="button" class="text-gray-400 hover:text-white p-2 transition-colors" title="Close" onClick={closePanels}>
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex items-stretch gap-3 overflow-x-auto custom-scrollbar pb-2">
-                                <For each={seasons()}>
-                                    {(season, index) => {
-                                        const active = () => index() === selectedSeasonIndex();
-                                        const epCount = () => (active() ? episodeCount(translations()) : 0);
-                                        const seasonNumber = String(index() + 1).padStart(2, '0');
-                                        return (
-                                            <div
-                                                class="flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm"
-                                                classList={{
-                                                    'bg-blue-600/30 border-blue-500/60 text-white': active(),
-                                                    'bg-black/30 border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/20': !active(),
-                                                }}
-                                                onClick={() => changeSeason(index())}
-                                            >
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <i class={`fa-solid ${active() ? 'fa-circle-play text-blue-400' : 'fa-layer-group text-gray-400'}`}></i>
-                                                    <span class="text-[10px] text-gray-400">{active() ? 'Now' : ''}</span>
-                                                </div>
-                                                <div class="flex items-baseline gap-2">
-                                                    <span class="text-[10px] text-blue-400 font-semibold">S{seasonNumber}</span>
-                                                    <p class="text-xs font-semibold truncate text-gray-100">{cleanTitle(season.title)}</p>
-                                                </div>
-                                                <p class="text-[10px] text-gray-400 mt-0.5">
-                                                    {epCount() > 0 ? `${epCount()} episodes` : 'Tap to load'}
-                                                </p>
-                                            </div>
-                                        );
-                                    }}
-                                </For>
-                            </div>
-                        </div>
+                            <For each={seasons()}>
+                                {(season, index) => (
+                                    <ThumbCard
+                                        badge={`S${String(index() + 1).padStart(2, '0')}`}
+                                        title={cleanTitle(season.title)}
+                                        active={index() === selectedSeasonIndex()}
+                                        activeLabel="Now"
+                                        activeIcon="fa-circle-play"
+                                        idleIcon="fa-layer-group"
+                                        onClick={() => changeSeason(index())}
+                                    />
+                                )}
+                            </For>
+                            <Show when={seasons().length === 0}>
+                                <div class="text-xs text-gray-400 py-4">No seasons found.</div>
+                            </Show>
+                        </OverlayPanel>
                     </div>
 
                     {/* Bottom Section */}
