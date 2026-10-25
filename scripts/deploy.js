@@ -29,7 +29,8 @@ console.log(`==> Starting deployment to ${REMOTE_HOST} (IPv4)...`);
  * @param {readonly string[]} args
  */
 function runCommand(command, args) {
-    const result = spawnSync(command, args, { stdio: 'inherit' });
+    const fullCommand = [command, ...args].join(' ');
+    const result = spawnSync(fullCommand, { stdio: 'inherit', shell: process.platform === 'win32'  });
     if (result.error) {
         console.error(`[ERROR] Failed to execute ${command}:`, result.error.message);
         process.exit(1);
@@ -121,13 +122,15 @@ const remoteCommand = [
     `rm -rf ${REMOTE_STAGE}`,
     `mkdir -p ${REMOTE_STAGE}`,
     `tar -xzf - -C ${REMOTE_STAGE}`,
+    // Normalize the script in case it was packed with CRLF endings
+    `sed -i 's/\\r$//' ${REMOTE_STAGE}/install.remote.sh`,
     `bash ${REMOTE_STAGE}/install.remote.sh`,
-].join(' && ');
+].join('\n');
 
 console.log(`==> Deploying to ${REMOTE_HOST} (IPv4) in a single connection...`);
 const ssh = spawnSync('ssh', [
     '-4', // Force IPv4
-    '-i', SSH_KEY,
+    // '-i', SSH_KEY,
     REMOTE_HOST,
     remoteCommand,
 ], { stdio: ['pipe', 'inherit', 'inherit'], input: tar.stdout });
