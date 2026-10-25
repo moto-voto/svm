@@ -28,7 +28,12 @@ export function buildPosterFallback(title) {
  * @param {number | null | undefined} seasons
  */
 export function formatSeasonsLabel(seasons) {
-    return seasons ? `${seasons} сезона` : '—';
+    if(!seasons) return '—';
+
+    const n = seasons % 10;
+    if(n === 1) return `${seasons} сезон`;
+    if([2, 3, 4].includes(n) ) return `${seasons} сезона`;
+    return `${seasons} сезонов`;
 }
 
 /**
