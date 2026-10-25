@@ -29,8 +29,15 @@ console.log(`==> Starting deployment to ${REMOTE_HOST} (IPv4)...`);
  * @param {readonly string[]} args
  */
 function runCommand(command, args) {
-    const fullCommand = [command, ...args].join(' ');
-    const result = spawnSync(fullCommand, { stdio: 'inherit', shell: process.platform === 'win32'  });
+    const isWin = process.platform === 'win32';
+
+    // Windows: npm.cmd requires a shell (CVE-2024-27980).
+    //          Passing a *string* (not an array) avoids DEP0190.
+    // POSIX:   npm is a real binary; use the args array, no shell.
+    const result = isWin
+        ? spawnSync([command, ...args].join(' '), { stdio: 'inherit', shell: true })
+        : spawnSync(command, args, { stdio: 'inherit' });
+
     if (result.error) {
         console.error(`[ERROR] Failed to execute ${command}:`, result.error.message);
         process.exit(1);
