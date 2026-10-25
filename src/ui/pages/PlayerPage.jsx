@@ -83,6 +83,8 @@ export default function PlayerPage() {
 
     /**
      * Remove quality indicators (SD, HD, 1080p, etc.) from episode titles.
+     * @param {string | undefined} title
+     * @returns {string | undefined}
      */
     function cleanEpisodeTitle(title) {
         if (!title) return title;
@@ -763,8 +765,8 @@ export default function PlayerPage() {
                             <div class="flex items-center justify-between mb-2 px-1">
                                 <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Episodes</h3>
                                 <div class="flex items-center space-x-2">
-                                    <span class="text-[12px] text-blue-400 font-semibold">{activePlaylist().length} available</span>
-                                    <button type="button" class="text-gray-400 hover:text-white p-1.5 transition-colors" title="Close" onClick={closePanels}>
+                                    <span class="text-xs text-blue-400 font-semibold">{activePlaylist().length} available</span>
+                                    <button type="button" class="text-gray-400 hover:text-white p-2 transition-colors" title="Close" onClick={closePanels}>
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
@@ -866,8 +868,8 @@ export default function PlayerPage() {
                             <div class="flex items-center justify-between mb-2 px-1">
                                 <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Seasons</h3>
                                 <div class="flex items-center space-x-2">
-                                    <span class="text-[12px] text-blue-400 font-semibold">{seasons().length} seasons</span>
-                                    <button type="button" class="text-gray-400 hover:text-white p-1.5 transition-colors" title="Close" onClick={closePanels}>
+                                    <span class="text-xs text-blue-400 font-semibold">{seasons().length} seasons</span>
+                                    <button type="button" class="text-gray-400 hover:text-white p-2 transition-colors" title="Close" onClick={closePanels}>
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
@@ -877,7 +879,7 @@ export default function PlayerPage() {
                                     {(season, index) => {
                                         const active = () => index() === selectedSeasonIndex();
                                         const epCount = () => (active() ? episodeCount(translations()) : 0);
-                                        const seasonNumber = String(index + 1).padStart(2, '0');
+                                        const seasonNumber = String(index() + 1).padStart(2, '0');
                                         return (
                                             <div
                                                 class="flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm"
