@@ -1,5 +1,5 @@
 {
-  "name": "svm3",
+  "name": "svm",
   "version": "1.0.0",
   "description": "",
   "main": "src/server.js",
@@ -28,7 +28,7 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
-    "typescript": "^7.0.2",
+    "typescript": "^6.0.3",
     "vite": "^8.3.5",
     "vite-plugin-solid": "^2.11.14"
   }
