@@ -835,7 +835,10 @@ export default function PlayerPage() {
                                         activeLabel="Now"
                                         activeIcon="fa-circle-play"
                                         idleIcon="fa-layer-group"
-                                        onClick={() => changeSeason(index())}
+                                        onClick={() => {
+                                            changeSeason(index());
+                                            closePanels();
+                                        }}
                                     />
                                 )}
                             </For>
