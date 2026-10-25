@@ -79,6 +79,19 @@ export default function PlayerPage() {
     const currentTranslationName = () => translations()[selectedTranslationIndex()]?.translation || '';
     const progressPct = () => progressPercent(currentTime(), duration());
 
+    // ---- Episode title cleaning helper ----
+
+    /**
+     * Remove quality indicators (SD, HD, 1080p, etc.) from episode titles.
+     */
+    function cleanEpisodeTitle(title) {
+        if (!title) return title;
+        return title
+            .replace(/\b(SD|HD|FullHD|FHD|1080p|720p|480p|2160p|4K|CAM|REMUX|HDR|WEB-DL|WEBRip|BluRay|DVD|TS|WEBRip|HDTS|HDTV|x264|x265|AV1|AAC|MP3|MPEG|M3U8|m3u8|MP4|mkv|mp4|avi|wmv|flv|webm|ts|m2ts)/gi, '')
+            .replace(/\s{2,}/g, ' ') // Normalize multiple spaces
+            .trim();
+    }
+
     // ---- OSD / loader / controls visibility helpers ----
 
     /**
@@ -546,6 +559,7 @@ export default function PlayerPage() {
             return;
         }
         try {
+            setLoader({ visible: true, title: 'Loading Series...', subtitle: 'Fetching playlist' });
             // The details page may pass the last played season so we can load
             // its episodes directly instead of the season the link opened on.
             let requestedUrl = seasonParam || seriesUrl;
@@ -567,6 +581,7 @@ export default function PlayerPage() {
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         } finally {
+            setLoader((prev) => ({ ...prev, visible: false }));
             resetControlsTimer();
         }
     });
@@ -694,7 +709,7 @@ export default function PlayerPage() {
                             </A>
                             <div class="flex flex-col">
                                 <h1 class="text-sm sm:text-base font-semibold truncate max-w-[180px] sm:max-w-md text-gray-100">
-                                    {currentEpisode()?.title || '—'}
+                                    {cleanEpisodeTitle(currentEpisode()?.title) || '—'}
                                 </h1>
                                 <span class="text-xs text-gray-400">
                                     {cleanTitle(currentSeason()?.title)} • {currentTranslationName()}
@@ -748,8 +763,8 @@ export default function PlayerPage() {
                             <div class="flex items-center justify-between mb-2 px-1">
                                 <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Episodes</h3>
                                 <div class="flex items-center space-x-2">
-                                    <span class="text-[10px] text-blue-400 font-semibold">{activePlaylist().length} available</span>
-                                    <button type="button" class="text-gray-400 hover:text-white p-0.5 transition-colors" title="Close" onClick={closePanels}>
+                                    <span class="text-[12px] text-blue-400 font-semibold">{activePlaylist().length} available</span>
+                                    <button type="button" class="text-gray-400 hover:text-white p-1.5 transition-colors" title="Close" onClick={closePanels}>
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
@@ -789,7 +804,7 @@ export default function PlayerPage() {
                                                     class="text-xs font-semibold truncate mt-1.5"
                                                     classList={{ 'text-blue-300': playing(), 'text-gray-200': !playing() }}
                                                 >
-                                                    {ep.title}
+                                                    {cleanEpisodeTitle(ep.title)}
                                                 </p>
                                             </div>
                                         );
@@ -851,8 +866,8 @@ export default function PlayerPage() {
                             <div class="flex items-center justify-between mb-2 px-1">
                                 <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">Seasons</h3>
                                 <div class="flex items-center space-x-2">
-                                    <span class="text-[10px] text-blue-400 font-semibold">{seasons().length} seasons</span>
-                                    <button type="button" class="text-gray-400 hover:text-white p-0.5 transition-colors" title="Close" onClick={closePanels}>
+                                    <span class="text-[12px] text-blue-400 font-semibold">{seasons().length} seasons</span>
+                                    <button type="button" class="text-gray-400 hover:text-white p-1.5 transition-colors" title="Close" onClick={closePanels}>
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
@@ -862,6 +877,7 @@ export default function PlayerPage() {
                                     {(season, index) => {
                                         const active = () => index() === selectedSeasonIndex();
                                         const epCount = () => (active() ? episodeCount(translations()) : 0);
+                                        const seasonNumber = String(index + 1).padStart(2, '0');
                                         return (
                                             <div
                                                 class="flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm"
@@ -875,7 +891,10 @@ export default function PlayerPage() {
                                                     <i class={`fa-solid ${active() ? 'fa-circle-play text-blue-400' : 'fa-layer-group text-gray-400'}`}></i>
                                                     <span class="text-[10px] text-gray-400">{active() ? 'Now' : ''}</span>
                                                 </div>
-                                                <p class="text-xs font-semibold truncate text-gray-100">{cleanTitle(season.title)}</p>
+                                                <div class="flex items-baseline gap-2">
+                                                    <span class="text-[10px] text-blue-400 font-semibold">S{seasonNumber}</span>
+                                                    <p class="text-xs font-semibold truncate text-gray-100">{cleanTitle(season.title)}</p>
+                                                </div>
                                                 <p class="text-[10px] text-gray-400 mt-0.5">
                                                     {epCount() > 0 ? `${epCount()} episodes` : 'Tap to load'}
                                                 </p>
