@@ -8,6 +8,7 @@ import { parseSeriesDetails } from '../../src/parser/series-details.js';
 import { parseSeries } from '../../src/parser/series.js';
 import { parsePlaylistTranslations, fetchPlaylist } from '../../src/parser/playlists.js';
 import { installFetch } from './fetch-mock.js';
+import { parseFilterResults } from '../../src/parser/filter.js';
 import * as fixtures from './fixtures.js';
 
 test('parseSearchResults extracts id-less search hits', () => {
@@ -161,4 +162,21 @@ test('fetchPlaylist returns [] when the payload is not an array', async () => {
     } finally {
         fetchMock.restore();
     }
+});
+
+test('parseFilterResults extracts id-less filter hits', () => {
+    const results = parseFilterResults(fixtures.filterHtml, 'https://example.com/');
+
+    assert.equal(results.length, 2);
+
+    assert.deepEqual(results[0], {
+        id: '1',
+        title: 'Test Show',
+        fullLink: 'https://example.com/serial-1-test.html',
+        image: null,
+        description: null,
+    });
+
+    assert.equal(results[1].title, 'Second Entry');
+    assert.equal(results[1].fullLink, 'https://other.example/second.html');
 });

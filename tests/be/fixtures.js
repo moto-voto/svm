@@ -91,7 +91,7 @@ export const seriesSimpleHtml = `
  * @returns {{ html: string, routes: Record<string, unknown[]> }}
  */
 export function seriesWithTranslations() {
-    const mk = (url) => ({ title: 'Episode 1<br/>Pilot', file: encodeEpisodeFile(url) });
+    const mk = (/** @type {string} */ url) => ({ title: 'Episode 1<br/>Pilot', file: encodeEpisodeFile(url) });
     const pl0 = [mk('https://example.com/e1.mp4')];
     const pl1 = [mk('https://example.com/f1.mp4')];
 
@@ -142,3 +142,21 @@ export function playlistWithInvalidEntry() {
 </body></html>`;
     return { html, routes: { [`${TARGET}/plist/mixed.json`]: pl } };
 }
+/**
+ * Filter results page with .letter elements containing hidden divs with links.
+ */
+export const filterHtml = `
+<html><body>
+  <div class="letter" data-tabt>
+    <span>A</span>
+  </div>
+  <div class="hidden">
+    <a data-id="1" href="/serial-1-test.html">Test Show</a>
+  </div>
+  <div class="letter" data-tabt>
+    <span>B</span>
+  </div>
+  <div class="hidden">
+    <a data-id="2" href="https://other.example/second.html">Second Entry</a>
+  </div>
+</body></html>`;

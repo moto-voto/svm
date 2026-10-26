@@ -6,6 +6,7 @@ import { apiPlaylist } from './api/api-playlist.js';
 import { apiSeries } from './api/api-series.js';
 import { apiSeriesList } from './api/api-series-list.js';
 import { apiSeriesDetails } from './api/api-series-details.js';
+import { apiSeriesFilter } from './api/api-series-filter.js';
 
 const __dirname = import.meta.dirname;
 
@@ -87,6 +88,33 @@ router.get('/api/series-details', async (req, res) => {
         res.json(series);
     } catch (err) {
         res.json({ error: 'Failed to fetch series info:' + (err instanceof Error ? err.message : String(err)) });
+    }
+});
+
+router.get('/api/series-filter', async (req, res) => {
+    try {
+        /** @param {any} val @returns {string | undefined} */
+        const normalize = (val) => typeof(val) === 'undefined' ? undefined : Array.isArray(val) ? val.join(',') : String(val);
+        const params = {
+            filter_quotG: normalize(req.query.filter_quotG),
+            filter_quotC: normalize(req.query.filter_quotC),
+            filter_sortTo: normalize(req.query.filter_sortTo),
+            filter_engName: normalize(req.query.filter_engName),
+            filter_only: normalize(req.query.filter_only),
+            filter_raiT: normalize(req.query.filter_raiT),
+            filter_hd: normalize(req.query.filter_hd),
+            filter_fhd: normalize(req.query.filter_fhd),
+            filter_sub: normalize(req.query.filter_sub),
+            filter_block: normalize(req.query.filter_block),
+            filter_history: normalize(req.query.filter_history),
+            filter_mark: normalize(req.query.filter_mark),
+            filter_nw: normalize(req.query.filter_nw),
+            filter_exp: normalize(req.query.filter_exp)
+        };
+        const results = await apiSeriesFilter(params);
+        res.json(results);
+    } catch (err) {
+        res.json({ error: 'Failed to fetch filtered series:' + (err instanceof Error ? err.message : String(err)) });
     }
 });
 
