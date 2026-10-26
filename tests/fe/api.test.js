@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { searchSeries, fetchSeries, fetchSeriesDetails } from '../../src/ui/api.js';
+import { searchSeries, fetchSeries, fetchSeriesDetails, clearApiCache } from '../../src/ui/api.js';
 import { installFetch } from './fetch-mock.js';
 
 test('searchSeries encodes the query and returns the array', async () => {
@@ -16,6 +16,7 @@ test('searchSeries encodes the query and returns the array', async () => {
         assert.equal(fetchMock.calls[0].url, '/api/search?q=big%20show');
     } finally {
         fetchMock.restore();
+        clearApiCache();
     }
 });
 
@@ -25,6 +26,7 @@ test('searchSeries throws on a non-ok response', async () => {
         await assert.rejects(() => searchSeries('x'), /HTTP 500 Boom/);
     } finally {
         fetchMock.restore();
+        clearApiCache();
     }
 });
 
@@ -34,6 +36,7 @@ test('searchSeries surfaces a server error payload', async () => {
         await assert.rejects(() => searchSeries('x'), /nope/);
     } finally {
         fetchMock.restore();
+        clearApiCache();
     }
 });
 
@@ -43,6 +46,7 @@ test('searchSeries rejects an unexpected (non-array) payload', async () => {
         await assert.rejects(() => searchSeries('x'), /Unexpected response from server/);
     } finally {
         fetchMock.restore();
+        clearApiCache();
     }
 });
 
@@ -58,6 +62,7 @@ test('fetchSeries encodes the url and returns the series', async () => {
         );
     } finally {
         fetchMock.restore();
+        clearApiCache();
     }
 });
 
@@ -67,6 +72,7 @@ test('fetchSeries throws when the payload carries an error', async () => {
         await assert.rejects(() => fetchSeries('u'), /bad series/);
     } finally {
         fetchMock.restore();
+        clearApiCache();
     }
 });
 
@@ -77,6 +83,7 @@ test('fetchSeriesDetails returns details and propagates errors', async () => {
         assert.equal(details.id, '1');
     } finally {
         good.restore();
+        clearApiCache();
     }
 
     const bad = installFetch([{ match: '/api/series-details', body: { error: 'no details' } }]);
@@ -84,6 +91,7 @@ test('fetchSeriesDetails returns details and propagates errors', async () => {
         await assert.rejects(() => fetchSeriesDetails('u'), /no details/);
     } finally {
         bad.restore();
+        clearApiCache();
     }
 });
 
@@ -95,5 +103,6 @@ test('fetchSeriesDetails throws on a non-ok response', async () => {
         await assert.rejects(() => fetchSeriesDetails('u'), /HTTP 404 Not Found/);
     } finally {
         fetchMock.restore();
+        clearApiCache();
     }
 });

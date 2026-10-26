@@ -144,6 +144,7 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
   with fixtures and a small `fetch` stub.
 - `tests/fe` — the dependency-free frontend modules:
   - `src/ui/api.js` (backend client)
+  - `src/ui/api-cache.js` (per-URL TTL cache wrapper: raw-text storage, request dedup, never-cache-failures)
   - `src/ui/utils.js` (`clamp`, `normalizeQuery`, `cleanTitle`, `formatTime`, base-path helpers)
   - `src/ui/grid-layout.js` (virtualized-grid math + stats label)
   - `src/ui/gestures.js` (`resolveGesture` touch decision logic)
@@ -176,7 +177,8 @@ resolve deep links.
 src/ui/
 ├── index.html                  # Vite entry (Tailwind, FontAwesome, Inter)
 ├── index.jsx                   # Router setup
-├── api.js                      # backend client
+├── api.js                      # backend client (all calls via the API cache)
+├── api-cache.js                # per-URL in-memory API cache (raw-text, TTL, dedup)
 ├── utils.js                    # clamp, normalizeQuery, cleanTitle, formatTime, BASE_PATH/withBase
 ├── gestures.js                 # resolveGesture (touch decision logic)
 ├── player.js                   # player display/index/keyboard/tap helpers

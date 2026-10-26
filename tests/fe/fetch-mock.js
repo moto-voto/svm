@@ -30,6 +30,9 @@ export function installFetch(routes) {
             async json() {
                 return typeof body === 'string' ? JSON.parse(body) : body;
             },
+            async text() {
+                return JSON.stringify(body);
+            },
         };
     };
 
