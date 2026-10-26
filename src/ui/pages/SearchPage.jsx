@@ -1,4 +1,4 @@
-import { createSignal, onMount, Show } from 'solid-js';
+import { createSignal, onMount, onCleanup, Show } from 'solid-js';
 import { useSearchParams } from '@solidjs/router';
 import Header from '../components/Header.jsx';
 import VirtualGrid from '../components/VirtualGrid.jsx';
@@ -28,6 +28,18 @@ export default function SearchPage() {
     const [query, setQuery] = createSignal(effectiveQuery);
     const [activeQuery, setActiveQuery] = createSignal(effectiveQuery);
 
+    // Where the user is in the grid (top-most visible item + offset, see
+    // `anchorFor` in grid-layout.js). Kept in a plain variable by VirtualGrid
+    // callbacks — never rendered, so no reactivity is needed. Starts from the
+    // restored anchor so leaving again right away keeps the position.
+    let latestAnchor = restoredState?.anchor ?? null;
+
+    /** Persist the current search results and viewport position. */
+    const persist = () => {
+        if (!items().length) return;
+        saveSearchState({ items: items(), stats: stats(), query: activeQuery(), anchor: latestAnchor });
+    };
+
     /** @param {SubmitEvent} event */
     const handleSubmit = (event) => {
         event.preventDefault();
@@ -44,6 +56,7 @@ export default function SearchPage() {
         setLoading(true);
         setError(null);
         setActiveQuery(q);
+        latestAnchor = null; // a new result set starts at the top
 
         // Keep the URL shareable/bookmarkable.
         setSearchParams({ q: q || undefined }, { replace: true });
@@ -51,7 +64,7 @@ export default function SearchPage() {
         try {
             const results = await searchSeries(q);
             setItems(results);
-            saveSearchState({ items: results, stats: stats(), query: q });
+            saveSearchState({ items: results, stats: stats(), query: q, anchor: null });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error: ' + String(err));
             setItems([]);
@@ -70,6 +83,12 @@ export default function SearchPage() {
         if (!restoredState) {
             load(effectiveQuery);
         }
+    });
+
+    onCleanup(() => {
+        // Remember where the user was in the grid so coming back from the
+        // details/player page restores the exact viewport position.
+        persist();
     });
 
     return (
@@ -126,16 +145,21 @@ export default function SearchPage() {
                 </Show>
 
                 {/* Virtual Canvas Container (grows to full dataset height) */}
-                <VirtualGrid items={items()} onStats={(newStats) => {
-                    setStats(newStats);
-                    // Only persist settled, successful results; while a load
-                    // is in flight (or failed) the stored state must keep
-                    // belonging to the previous query so a later visit
-                    // refetches instead of restoring junk.
-                    if (!loading() && !error()) {
-                        saveSearchState({ items: items(), stats: newStats, query: activeQuery() });
-                    }
-                }} />
+                <VirtualGrid
+                    items={items()}
+                    restoreAnchor={restoredState?.anchor ?? null}
+                    onViewportChange={(anchor) => { latestAnchor = anchor; }}
+                    onStats={(newStats) => {
+                        setStats(newStats);
+                        // Only persist settled, successful results; while a load
+                        // is in flight (or failed) the stored state must keep
+                        // belonging to the previous query so a later visit
+                        // refetches instead of restoring junk.
+                        if (!loading() && !error()) {
+                            persist();
+                        }
+                    }}
+                />
             </main>
         </div>
     );

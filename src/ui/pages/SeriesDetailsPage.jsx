@@ -60,6 +60,7 @@ export default function SeriesDetailsPage() {
                     <div class="flex items-center justify-between gap-3">
                         <A
                             href="/"
+                            noScroll
                             class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
                         >
                             <i class="fa-solid fa-arrow-left text-brand-orange"></i>

@@ -83,6 +83,69 @@ export function positionFor(layout, index) {
 }
 
 /**
+ * Y offset (px) of an item's top edge relative to the grid container,
+ * or null for an empty dataset / out-of-range index.
+ * @param {ReturnType<typeof computeLayout>} layout
+ * @param {number} index
+ * @returns {number | null}
+ */
+export function itemTop(layout, index) {
+    if (!Number.isInteger(index) || index < 0 || index >= layout.total || layout.rowHeight <= 0) {
+        return null;
+    }
+    return Math.floor(index / layout.columns) * layout.rowHeight;
+}
+
+/**
+ * @typedef {{
+ *   index: number,
+ *   offset: number,
+ * }} ViewportAnchor
+ */
+
+/**
+ * Describe the current viewport by its top-most visible item: which item it
+ * is and how many pixels of scroll lie past its top edge (`offset` can be
+ * negative when the item's top is still below the viewport top, e.g. before
+ * the container is reached). Saving/restoring this anchor survives layout
+ * changes (e.g. device rotation) better than a raw scroll offset.
+ *
+ * @param {{
+ *   layout: ReturnType<typeof computeLayout>,
+ *   visibleIndices: number[],
+ *   scrollY: number,
+ *   containerTop: number,
+ * }} input
+ * @returns {ViewportAnchor | null} null when nothing is visible
+ */
+export function anchorFor({ layout, visibleIndices, scrollY, containerTop }) {
+    const index = visibleIndices[0];
+    if (index === undefined) return null;
+    const top = itemTop(layout, index);
+    if (top === null) return null;
+    return { index, offset: scrollY - containerTop - top };
+}
+
+/**
+ * Document-space `scrollY` that puts a saved anchor back into the same
+ * viewport position, or null when the anchor cannot be applied (missing or
+ * out of range for the current dataset).
+ *
+ * @param {{
+ *   layout: ReturnType<typeof computeLayout>,
+ *   anchor: ViewportAnchor | null | undefined,
+ *   containerTop: number,
+ * }} input
+ * @returns {number | null}
+ */
+export function scrollPositionForAnchor({ layout, anchor, containerTop }) {
+    if (!anchor) return null;
+    const top = itemTop(layout, anchor.index);
+    if (top === null) return null;
+    return Math.max(0, containerTop + top + anchor.offset);
+}
+
+/**
  * Human-readable stats label for the header badge.
  * @param {number} mounted number of currently mounted nodes
  * @param {number} total total number of items

@@ -9,6 +9,9 @@ import {
     computeVisibleIndices,
     positionFor,
     formatGridStats,
+    itemTop,
+    anchorFor,
+    scrollPositionForAnchor,
 } from '../../src/ui/grid-layout.js';
 
 test('cardMetrics picks breakpoints by window width', () => {
@@ -126,4 +129,59 @@ test('formatGridStats reports mounted vs total', () => {
         formatGridStats(24, 1000),
         `24 visible (${(1000).toLocaleString()} total)`
     );
+});
+
+test('itemTop places items by row and rejects out-of-range indices', () => {
+    const layout = computeLayout({ total: 40, containerWidth: 776, windowWidth: 800 });
+    assert.equal(itemTop(layout, 0), 0);
+    assert.equal(itemTop(layout, layout.columns), layout.rowHeight);
+    assert.equal(itemTop(layout, 39), 9 * layout.rowHeight);
+    assert.equal(itemTop(layout, 40), null);
+    assert.equal(itemTop(layout, -1), null);
+    assert.equal(itemTop(layout, 1.5), null);
+    assert.equal(itemTop(computeLayout({ total: 0, containerWidth: 776, windowWidth: 800 }), 0), null);
+});
+
+test('anchorFor describes the top-most visible item', () => {
+    const layout = computeLayout({ total: 500, containerWidth: 400, windowWidth: 400 });
+    const containerTop = 80;
+    const scrollY = 5000;
+    const visibleIndices = computeVisibleIndices({ layout, scrollY, containerTop, windowHeight: 800 });
+
+    const anchor = anchorFor({ layout, visibleIndices, scrollY, containerTop });
+    assert.ok(anchor, 'anchor must exist for a non-empty window');
+    assert.equal(anchor.index, visibleIndices[0]);
+    // offset = how far the anchor item top is scrolled past the viewport top
+    assert.ok(Math.abs(anchor.offset) < layout.rowHeight * (BUFFER_ROWS + 1));
+});
+
+test('anchorFor returns null when nothing is visible', () => {
+    const layout = computeLayout({ total: 500, containerWidth: 400, windowWidth: 400 });
+    assert.equal(anchorFor({ layout, visibleIndices: [], scrollY: 0, containerTop: 80 }), null);
+    const empty = computeLayout({ total: 0, containerWidth: 400, windowWidth: 400 });
+    assert.equal(anchorFor({ layout: empty, visibleIndices: [0], scrollY: 0, containerTop: 80 }), null);
+});
+
+test('anchor round-trip restores the exact scroll position', () => {
+    const layout = computeLayout({ total: 500, containerWidth: 400, windowWidth: 400 });
+    const containerTop = 80;
+    for (const scrollY of [0, 80, 1234, 5000, 20000]) {
+        const visibleIndices = computeVisibleIndices({ layout, scrollY, containerTop, windowHeight: 800 });
+        const anchor = anchorFor({ layout, visibleIndices, scrollY, containerTop });
+        const restored = scrollPositionForAnchor({ layout, anchor, containerTop });
+        assert.equal(restored, scrollY, `round-trip failed for scrollY=${scrollY}`);
+    }
+});
+
+test('scrollPositionForAnchor rejects unusable anchors and clamps negatives', () => {
+    const layout = computeLayout({ total: 500, containerWidth: 400, windowWidth: 400 });
+    const containerTop = 80;
+
+    assert.equal(scrollPositionForAnchor({ layout, anchor: null, containerTop }), null);
+    assert.equal(scrollPositionForAnchor({ layout, anchor: { index: 500, offset: 0 }, containerTop }), null);
+
+    // An anchor pointing above the container (possible after a layout change)
+    // clamps to the top of the page instead of a negative scroll.
+    const restored = scrollPositionForAnchor({ layout, anchor: { index: 0, offset: -1000 }, containerTop });
+    assert.equal(restored, 0);
 });

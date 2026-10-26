@@ -1,6 +1,6 @@
 import { createSignal, createMemo, createEffect, onMount, onCleanup, For } from 'solid-js';
 import { A } from '@solidjs/router';
-import { computeLayout, computeVisibleIndices, positionFor, formatGridStats } from '../grid-layout.js';
+import { computeLayout, computeVisibleIndices, positionFor, formatGridStats, anchorFor, scrollPositionForAnchor } from '../grid-layout.js';
 
 /** @import { SerialDescription } from '../../parser/search.js' */
 
@@ -11,6 +11,8 @@ import { computeLayout, computeVisibleIndices, positionFor, formatGridStats } fr
  * @param {{
  *   items: SerialDescription[],
  *   onStats?: (stats: string) => void,
+ *   onViewportChange?: (anchor: { index: number, offset: number }) => void,
+ *   restoreAnchor?: { index: number, offset: number } | null,
  * }} props
  */
 export default function VirtualGrid(props) {
@@ -59,6 +61,21 @@ export default function VirtualGrid(props) {
         props.onStats?.(formatGridStats(visibleIndices().length, props.items.length));
     });
 
+    // Report the viewport anchor (top-most visible item + scroll offset past
+    // it) so the parent can restore the scroll position when the user comes
+    // back from another page.
+    createEffect(() => {
+        const anchor = anchorFor({
+            layout: layout(),
+            visibleIndices: visibleIndices(),
+            scrollY: scrollY(),
+            containerTop: containerTop(),
+        });
+        if (anchor) {
+            props.onViewportChange?.(anchor);
+        }
+    });
+
     // A new result set should start from the top of the page.
     let skipInitialScroll = true;
     createEffect(() => {
@@ -73,6 +90,28 @@ export default function VirtualGrid(props) {
 
     onMount(() => {
         measure();
+
+        // Put the saved viewport anchor back under the viewport top (coming
+        // back to the grid from another page must not land at the top). Read
+        // once: the anchor to restore is fixed for this mount.
+        //
+        // The container's height style is bound to `layout()`, but at this
+        // point it was rendered from the unmeasured containerWidth (0), i.e.
+        // far too short, and the style effect updating it has not flushed
+        // yet. Apply the measured height directly — otherwise the document is
+        // not scrollable far enough and the browser clamps `scrollTo` back to
+        // the top of the list. The queued style effect writes the same value.
+        if (containerRef) {
+            containerRef.style.height = `${layout().totalHeight}px`;
+        }
+        const restoredY = scrollPositionForAnchor({
+            layout: layout(),
+            anchor: props.restoreAnchor,
+            containerTop: containerTop(),
+        });
+        if (restoredY !== null) {
+            window.scrollTo(0, restoredY);
+        }
 
         const handleScroll = () => setScrollY(window.scrollY);
         const handleResize = () => measure();

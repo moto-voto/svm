@@ -11,7 +11,7 @@ if (!root) throw new Error('Root element #root not found');
 
 render(
     () => (
-        <Router base={BASE_PATH}>
+        <Router base={BASE_PATH} scrollRestoration>
             <Route path="/" component={SearchPage} />
             <Route path="/series" component={PlayerPage} />
             <Route path="/series-details" component={SeriesDetailsPage} />

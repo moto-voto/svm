@@ -19,6 +19,9 @@
  * @property {SerialDescription[]} items
  * @property {string} stats
  * @property {string} query normalized query the results belong to
+ * @property {{ index: number, offset: number } | null} [anchor] viewport
+ *   position: top-most visible item and the scroll offset past its top edge
+ *   (see `anchorFor` in `grid-layout.js`) — restored when the user comes back
  */
 
 /** @type {SearchState | null} */

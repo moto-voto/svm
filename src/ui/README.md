@@ -11,8 +11,10 @@ Pages:
 
 - `pages/SearchPage.jsx` — virtualized poster grid (formerly `index.ejs`); keeps
   `?q=` in the URL and restores the last search (in-memory, survives client-side
-  navigation) without a new request when returning from `SeriesDetailsPage`;
-  a reload intentionally starts fresh — the URL query is the durable state
+  navigation) without a new request when returning from `SeriesDetailsPage`,
+  including the scroll position in the grid (viewport anchor, see `anchorFor` in
+  `grid-layout.js`); a reload intentionally starts fresh — the URL query is the
+  durable state
 - `pages/PlayerPage.jsx` — MX-Player style video player (formerly `player.ejs`)
 - `pages/SeriesDetailsPage.jsx` — series details card (formerly `series-details.ejs`)
 

@@ -681,7 +681,7 @@ export default function PlayerPage() {
                     <div class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center gap-4 text-center p-6">
                         <i class="fa-solid fa-triangle-exclamation text-4xl text-red-400"></i>
                         <p class="text-sm text-gray-200">{error()}</p>
-                        <A href="/" class="text-blue-400 hover:text-blue-300 text-sm font-semibold">← Назад к поиску</A>
+                        <A href="/" noScroll class="text-blue-400 hover:text-blue-300 text-sm font-semibold">← Назад к поиску</A>
                     </div>
                 </Show>
 
