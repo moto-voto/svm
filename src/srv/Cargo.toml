@@ -1,0 +1,31 @@
+[package]
+name = "svm-server"
+version = "1.0.0"
+edition = "2021"
+description = "Rust (axum + scrape-core) port of the svm backend: src/server.js + src/api + src/parser"
+publish = false
+
+[[bin]]
+name = "svm-server"
+path = "src/main.rs"
+
+[dependencies]
+# Minimal axum build: no tracing/form/multipart/websockets.
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "json", "query"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "macros"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Upstream client; rustls keeps the binary self-contained (no OpenSSL/schannel setup).
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "charset"] }
+# cheerio replacement (per task): arena DOM + CSS selectors, pre-compilable.
+scrape-core = "0.2"
+percent-encoding = "2"
+base64 = "0.22"
+socket2 = "0.6.5"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
