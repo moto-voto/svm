@@ -66,14 +66,16 @@ export function buildPlayerHref(seriesUrl, seasonLink, title, image, from) {
 }
 
 /**
- * Where the details page's back button should go. The history/bookmarks pages
- * link in with `?from=history` / `?from=bookmarks`; everything else (search
- * tiles, direct links) falls back to the main search page.
+ * Where the details page's back button should go. The history/bookmarks/filter
+ * pages link in with `?from=history` / `?from=bookmarks` / `?from=filter`;
+ * everything else (search tiles, direct links) falls back to the main search
+ * page.
  * @param {string | null | undefined} from raw `?from=` value
  * @returns {string}
  */
 export function resolveBackHref(from) {
     if (from === 'history') return '/history';
     if (from === 'bookmarks') return '/bookmarks';
+    if (from === 'filter') return '/filter';
     return '/';
 }

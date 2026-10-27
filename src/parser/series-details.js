@@ -43,7 +43,7 @@ export function parseSeriesDetails(html) {
     const image = $('meta[property="og:image"]').attr('content') || $('.pgs-sinfo-img img').attr('src') || '';
 
     // Description: metadata description or first paragraph in info
-    const description = $('meta[name="description"]').attr('content') || $('.pgs-sinfo-info > p').first().text().trim() || null;
+    const description = $('.pgs-sinfo-info > p').first().text().trim() ||$('meta[name="description"]').attr('content') ||  null;
 
     // Helper to extract text fields based on labels inside pgs-sinfo_list
     /**

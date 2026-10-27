@@ -7,6 +7,17 @@ body {
     color: #e5e5e5;
 }
 
+/* Native dropdowns on a dark UI: request dark chrome and keep the opened
+   option list legible (some browsers would otherwise render white-on-white). */
+select {
+    color-scheme: dark;
+}
+
+select option {
+    background-color: #232327;
+    color: #e5e5e5;
+}
+
 /* Poster card aspect ratio (~ 2 : 3.1) */
 .poster-card {
     position: absolute;

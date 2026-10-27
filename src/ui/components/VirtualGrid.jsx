@@ -133,13 +133,26 @@ export default function VirtualGrid(props) {
         window.addEventListener('resize', handleResize);
         window.addEventListener('orientationchange', handleResize);
 
-        const resizeObserver = new ResizeObserver(() => measure());
+        // ResizeObserver callbacks must not mutate layout synchronously: the
+        // container's height is derived from its measured width, so measuring
+        // inside the callback resizes the observed element and re-fires the
+        // observer in the same frame — the browser then reports a
+        // "ResizeObserver loop completed with undelivered notifications"
+        // error. Deferring the measurement to the next animation frame lets
+        // the cycle settle (at most one measurement per frame).
+        let resizeRaf = 0;
+        const scheduleMeasure = () => {
+            cancelAnimationFrame(resizeRaf);
+            resizeRaf = requestAnimationFrame(measure);
+        };
+        const resizeObserver = new ResizeObserver(scheduleMeasure);
         if (containerRef) resizeObserver.observe(containerRef);
 
         onCleanup(() => {
             window.removeEventListener('scroll', handleScroll);
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('orientationchange', handleResize);
+            cancelAnimationFrame(resizeRaf);
             resizeObserver.disconnect();
         });
     });

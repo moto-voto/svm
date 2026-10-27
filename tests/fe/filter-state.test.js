@@ -7,12 +7,22 @@ import {
     resolveFilterRestore,
 } from '../../src/ui/filter-state.js';
 
-test('resolveFilterRestore restores the last filter when returning without ?g=/?c=', () => {
-    // Back navigation from SeriesDetailsPage lands on `/` (no params).
+test('resolveFilterRestore restores the last filter on a bare URL (switcher visit)', () => {
+    // Clicking "Фильтр" in the view switcher lands on `/filter` (no params);
+    // the session's last filter is reused.
     const stored = { items: [], stats: '5 / 5', genre: '19', country: 'all' };
-    assert.deepEqual(resolveFilterRestore('', '', stored), {
+    assert.deepEqual(resolveFilterRestore(undefined, undefined, stored), {
         genre: '19',
         country: 'all',
+        restored: stored,
+    });
+});
+
+test('resolveFilterRestore reuses the full last filter on a bare URL', () => {
+    const stored = { items: [], stats: '5 / 5', genre: '19', country: 'США' };
+    assert.deepEqual(resolveFilterRestore(undefined, undefined, stored), {
+        genre: '19',
+        country: 'США',
         restored: stored,
     });
 });
@@ -37,16 +47,20 @@ test('resolveFilterRestore lets the URL values win over the stored state', () =>
 });
 
 test('resolveFilterRestore searches a URL filter with no stored state (deep link)', () => {
-    assert.deepEqual(resolveFilterRestore('7', 'all', null), { genre: '7', country: 'all', restored: null });
+    assert.deepEqual(resolveFilterRestore('7', undefined, null), { genre: '7', country: 'all', restored: null });
 });
 
 test('resolveFilterRestore defaults to all with neither URL nor storage', () => {
-    assert.deepEqual(resolveFilterRestore('', '', null), { genre: 'all', country: 'all', restored: null });
+    assert.deepEqual(resolveFilterRestore(undefined, undefined, null), {
+        genre: 'all',
+        country: 'all',
+        restored: null,
+    });
 });
 
 test('resolveFilterRestore does not restore a state for a different country', () => {
     const stored = { items: [], stats: '5 / 5', genre: '19', country: 'США' };
-    const resolved = resolveFilterRestore('19', 'all', stored);
+    const resolved = resolveFilterRestore('19', undefined, stored);
     assert.equal(resolved.genre, '19');
     assert.equal(resolved.country, 'all');
     assert.equal(resolved.restored, null);

@@ -164,7 +164,7 @@ test('fetchPlaylist returns [] when the payload is not an array', async () => {
     }
 });
 
-test('parseFilterResults extracts id-less filter hits', () => {
+test('parseFilterResults extracts filter hits and builds cover URLs from ids', () => {
     const results = parseFilterResults(fixtures.filterHtml, 'https://example.com/');
 
     assert.equal(results.length, 2);
@@ -173,10 +173,11 @@ test('parseFilterResults extracts id-less filter hits', () => {
         id: '1',
         title: 'Test Show',
         fullLink: 'https://example.com/serial-1-test.html',
-        image: null,
+        image: 'https://cdn.svstat.net/oblojka/1.jpg',
         description: null,
     });
 
     assert.equal(results[1].title, 'Second Entry');
     assert.equal(results[1].fullLink, 'https://other.example/second.html');
+    assert.equal(results[1].image, 'https://cdn.svstat.net/oblojka/2.jpg');
 });

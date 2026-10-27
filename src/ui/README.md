@@ -14,10 +14,12 @@ Pages:
   navigation) without a new request when returning from `SeriesDetailsPage`,
   including the scroll position in the grid (viewport anchor, see `anchorFor` in
   `grid-layout.js`); a reload intentionally starts fresh — the URL query is the
-  durable state. It also has a **filter mode** (toggle "Поиск / Фильтр" in the
-  header): genre + country dropdowns querying `/api/series-filter` with the URL
-  `?m=filter&g=<genre id>&c=<country>`, applied immediately on change; the
-  two modes keep separate in-memory listings and scroll anchors
+  durable state
+- `pages/FilterPage.jsx` — the genre/country filter view (`/filter`): the same
+  virtualized poster grid fed by `/api/series-filter`. The genre and country
+  dropdowns apply immediately on change (`?g=<genre id>&c=<country>` in the
+  URL); a bare `/filter` URL reuses the last filter of the session, otherwise
+  it browses the whole catalog; scroll position is restored on back-navigation
 - `pages/HistoryPage.jsx` — the watch-history view: the same virtualized poster
   grid, but the tiles come from the IndexedDB watch-history store instead of a
   backend search. Sorted most-recently-watched first, filterable with the same
@@ -36,9 +38,9 @@ Pages:
   beside the watch action it hosts a **bookmark toggle** ("В закладки" /
   "В закладках") stored in the IndexedDB bookmarks store
 
-All three poster-grid pages share `components/ViewSwitcher.jsx` in the header
-(`nav` slot): a full-width segmented control (Поиск / История / Закладки) with
-finger-friendly tap targets to jump between views from anywhere.
+All four poster-grid pages share `components/ViewSwitcher.jsx` in the header
+(`nav` slot): a full-width segmented control (Поиск / История / Закладки /
+Фильтр) with finger-friendly tap targets to jump between views from anywhere.
 
 ## Tooling decision
 
@@ -195,7 +197,8 @@ component behaviour is covered by the production build and manual checks.
 
 | Route              | Page                | Backend API                 |
 | ------------------ | ------------------- | --------------------------- |
-| `/`                | SearchPage          | `/api/search?q=` / `/api/series-filter?filter_quotG=&filter_quotC=` |
+| `/`                | SearchPage          | `/api/search?q=`            |
+| `/filter`          | FilterPage          | `/api/series-filter?filter_quotG=&filter_quotC=` |
 | `/history`         | HistoryPage         | none (IndexedDB watch history) |
 | `/bookmarks`       | BookmarksPage       | none (IndexedDB bookmarks)  |
 | `/series`          | PlayerPage          | `/api/series?url=`          |
@@ -228,6 +231,7 @@ src/ui/
 ├── styles.css                  # global styles (search page / shared)
 ├── pages/
 │   ├── SearchPage.jsx          # virtualized poster grid
+│   ├── FilterPage.jsx          # genre/country filter grid (`/api/series-filter`)
 │   ├── HistoryPage.jsx         # watch-history poster grid (IndexedDB-backed)
 │   ├── BookmarksPage.jsx       # bookmarks poster grid (IndexedDB-backed)
 │   ├── PlayerPage.jsx          # MX-Player style video player
