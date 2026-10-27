@@ -14,9 +14,13 @@ import { A } from '@solidjs/router';
  * `topRight` renders on the right side of the same row as the brand label
  * (use it for compact status badges, e.g. a live counter).
  *
+ * `nav` renders between the brand row and the page controls — the canonical
+ * place for the Search/History/Bookmarks view switcher.
+ *
  * @param {{
  *   maxWidth?: string,
  *   topRight?: JSXElement,
+ *   nav?: JSXElement,
  *   children?: JSXElement,
  * }} props
  */
@@ -41,6 +45,9 @@ export default function Header(props) {
 
                     {props.topRight}
                 </div>
+
+                {/* View switcher (Search / History / Bookmarks) */}
+                {props.nav}
 
                 {/* Page-provided top controls (pinned with the header) */}
                 {props.children}

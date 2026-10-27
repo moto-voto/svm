@@ -94,6 +94,7 @@ test('buildPlayerHref carries the origin (from) through to the player', () => {
 
 test('resolveBackHref returns to the origin page', () => {
     assert.equal(resolveBackHref('history'), '/history');
+    assert.equal(resolveBackHref('bookmarks'), '/bookmarks');
     assert.equal(resolveBackHref(''), '/');
     assert.equal(resolveBackHref(undefined), '/');
     assert.equal(resolveBackHref(null), '/');

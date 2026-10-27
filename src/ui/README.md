@@ -14,18 +14,28 @@ Pages:
   navigation) without a new request when returning from `SeriesDetailsPage`,
   including the scroll position in the grid (viewport anchor, see `anchorFor` in
   `grid-layout.js`); a reload intentionally starts fresh — the URL query is the
-  durable state; the header offers a link to the watch-history page
+  durable state
 - `pages/HistoryPage.jsx` — the watch-history view: the same virtualized poster
   grid, but the tiles come from the IndexedDB watch-history store instead of a
   backend search. Sorted most-recently-watched first, filterable with the same
   search box ("Поиск в истории..."), and each tile shows the last watched
   season/episode as S01/E05 badges in the cover corners. Tiles link to the
   series details exactly like search results
+- `pages/BookmarksPage.jsx` — the bookmarks view: poster grid fed by the
+  IndexedDB bookmarks store, sorted by the order series were added (newest
+  first) and filterable with the same search box ("Поиск в закладках...");
+  tiles link to the series details exactly like search results
 - `pages/PlayerPage.jsx` — MX-Player style video player (formerly `player.ejs`);
   records the last watch point (season/episode numbers + metadata passed via the
   player URL) into the watch-history store so the History page needs no backend
   requests
-- `pages/SeriesDetailsPage.jsx` — series details card (formerly `series-details.ejs`)
+- `pages/SeriesDetailsPage.jsx` — series details card (formerly `series-details.ejs`);
+  beside the watch action it hosts a **bookmark toggle** ("В закладки" /
+  "В закладках") stored in the IndexedDB bookmarks store
+
+All three poster-grid pages share `components/ViewSwitcher.jsx` in the header
+(`nav` slot): a full-width segmented control (Поиск / История / Закладки) with
+finger-friendly tap targets to jump between views from anywhere.
 
 ## Tooling decision
 
@@ -167,6 +177,8 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
   - `src/ui/series-details.js` (poster/rating/label formatting)
   - `src/ui/search-state.js` (in-memory last-search store + restore/no-refetch decision)
   - `src/ui/history-state.js` (in-memory last-history listing store + restore/no-refetch decision)
+  - `src/ui/bookmarks.js` (IndexedDB bookmarks store: `loadBookmarks`/`saveBookmark`/`removeBookmark`/`isBookmarked`, `sortBookmarksByAdded`, `buildBookmarkTiles`)
+  - `src/ui/bookmarks-state.js` (in-memory last-bookmarks listing store + restore/no-refetch decision)
 
 Note: Solid *component* tests would require a DOM environment plus a JSX
 transform (e.g. `@solidjs/testing-library` + `happy-dom`), so frontend logic is
@@ -180,6 +192,7 @@ component behaviour is covered by the production build and manual checks.
 | ------------------ | ------------------- | --------------------------- |
 | `/`                | SearchPage          | `/api/search?q=`            |
 | `/history`         | HistoryPage         | none (IndexedDB watch history) |
+| `/bookmarks`       | BookmarksPage       | none (IndexedDB bookmarks)  |
 | `/series`          | PlayerPage          | `/api/series?url=`          |
 | `/series-details`  | SeriesDetailsPage   | `/api/series-details?url=`  |
 
@@ -199,19 +212,23 @@ src/ui/
 ├── gestures.js                 # resolveGesture (touch decision logic)
 ├── player.js                   # player display/index/keyboard/tap helpers
 ├── watch-progress.js            # IndexedDB watch-progress + watch-history persistence
+├── bookmarks.js                 # IndexedDB bookmarks persistence
 ├── series-details.js           # series-details display helpers
 ├── search-state.js             # in-memory search state (back-nav restore)
 ├── history-state.js            # in-memory history-listing state (back-nav restore)
+├── bookmarks-state.js          # in-memory bookmarks-listing state (back-nav restore)
 ├── grid-layout.js              # virtualized-grid layout math
 ├── styles.css                  # global styles (search page / shared)
 ├── pages/
 │   ├── SearchPage.jsx          # virtualized poster grid
 │   ├── HistoryPage.jsx         # watch-history poster grid (IndexedDB-backed)
+│   ├── BookmarksPage.jsx       # bookmarks poster grid (IndexedDB-backed)
 │   ├── PlayerPage.jsx          # MX-Player style video player
-│   ├── SeriesDetailsPage.jsx   # series details card
+│   ├── SeriesDetailsPage.jsx   # series details card (+ bookmark toggle)
 │   └── player.css              # player-specific styles
 └── components/
     ├── Header.jsx              # unified header (brand, optional stats + search)
+    ├── ViewSwitcher.jsx        # Search/History/Bookmarks segmented control
     └── VirtualGrid.jsx         # virtualized/windowed poster grid
 ```
 

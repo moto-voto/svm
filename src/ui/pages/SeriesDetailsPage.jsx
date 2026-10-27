@@ -2,6 +2,8 @@ import { createSignal, createEffect, onMount, Show } from 'solid-js';
 import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeriesDetails } from '../api.js';
 import { loadSeriesProgress } from '../watch-progress.js';
+import { isBookmarked, saveBookmark, removeBookmark } from '../bookmarks.js';
+import { invalidateBookmarksState } from '../bookmarks-state.js';
 import Header from '../components/Header.jsx';
 import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating, buildPlayerHref, resolveBackHref } from '../series-details.js';
 
@@ -21,6 +23,41 @@ export default function SeriesDetailsPage() {
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
     const [posterSrc, setPosterSrc] = createSignal('');
     const [lastSeasonLink, setLastSeasonLink] = createSignal('');
+    const [bookmarked, setBookmarked] = createSignal(false);
+    const [bookmarkBusy, setBookmarkBusy] = createSignal(false);
+
+    /**
+     * Stable identity used for the bookmark record — same rules as the watch
+     * progress key: the serial id when available, otherwise the series URL.
+     */
+    const bookmarksSeriesId = () => (details()?.idSerial || details()?.fullLink || seriesUrl);
+
+    /**
+     * Toggle the series' bookmark, then drop the bookmarks page's in-memory
+     * snapshot so the next visit re-reads IndexedDB (the listing changed).
+     */
+    async function toggleBookmark() {
+        if (bookmarkBusy()) return;
+        const seriesId = bookmarksSeriesId();
+        if (!seriesId) return;
+        setBookmarkBusy(true);
+        try {
+            if (bookmarked()) {
+                await removeBookmark(seriesId);
+                setBookmarked(false);
+            } else {
+                await saveBookmark(seriesId, {
+                    title: details()?.title,
+                    image: normalizeImageUrl(details()?.image || '') || null,
+                    fullLink: details()?.fullLink || seriesUrl,
+                });
+                setBookmarked(true);
+            }
+            invalidateBookmarksState();
+        } finally {
+            setBookmarkBusy(false);
+        }
+    }
 
     onMount(async () => {
         if (!seriesUrl) {
@@ -37,6 +74,7 @@ export default function SeriesDetailsPage() {
             if (seriesId) {
                 const record = await loadSeriesProgress(seriesId);
                 setLastSeasonLink(record?.lastSeasonLink || '');
+                setBookmarked(Boolean(await isBookmarked(seriesId)));
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -58,7 +96,27 @@ export default function SeriesDetailsPage() {
     return (
         <div class="min-h-screen flex flex-col justify-between bg-[#0d0d0e] text-gray-200 selection:bg-brand-orange selection:text-black">
             <div>
-                <Header maxWidth="max-w-4xl">
+                <Header
+                    maxWidth="max-w-4xl"
+                    topRight={
+                        <Show when={details()}>
+                            <button
+                                type="button"
+                                onClick={toggleBookmark}
+                                disabled={bookmarkBusy()}
+                                title={bookmarked() ? 'Убрать из закладок' : 'Добавить в закладки'}
+                                class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap disabled:opacity-60"
+                                classList={{
+                                    'bg-brand-orange/15 text-brand-orange border-brand-orange/40': bookmarked(),
+                                    'bg-[#222226] text-gray-300 border-neutral-700/60 hover:bg-[#2c2c32] hover:text-white': !bookmarked(),
+                                }}
+                            >
+                                <i class={`fa-solid ${bookmarked() ? 'fa-bookmark' : 'fa-bookmark-regular'} text-xs sm:text-sm`}></i>
+                                <span>{bookmarked() ? 'В закладках' : 'В закладки'}</span>
+                            </button>
+                        </Show>
+                    }
+                >
                     {/* Back to list + primary watch action, pinned while scrolling */}
                     <div class="flex items-center justify-between gap-3">
                         <A
