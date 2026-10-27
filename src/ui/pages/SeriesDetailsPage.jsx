@@ -3,13 +3,16 @@ import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeriesDetails } from '../api.js';
 import { loadSeriesProgress } from '../watch-progress.js';
 import Header from '../components/Header.jsx';
-import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating, buildPlayerHref } from '../series-details.js';
+import { normalizeImageUrl, buildPosterFallback, formatSeasonsLabel, formatRating, buildPlayerHref, resolveBackHref } from '../series-details.js';
 
 /** @import { SeriesDetails } from '../../parser/series-details.js' */
 
 export default function SeriesDetailsPage() {
     const [searchParams] = useSearchParams();
     const seriesUrl = String(searchParams.url || '');
+    // Origin of the visit ("history") so the back button returns to the page
+    // the user actually came from instead of always the main search.
+    const fromParam = String(searchParams.from || '');
 
     const [details, setDetails] = createSignal(
         /** @type {SeriesDetails | null} */ (null)
@@ -59,7 +62,7 @@ export default function SeriesDetailsPage() {
                     {/* Back to list + primary watch action, pinned while scrolling */}
                     <div class="flex items-center justify-between gap-3">
                         <A
-                            href="/"
+                            href={resolveBackHref(fromParam)}
                             noScroll
                             class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
                         >
@@ -77,7 +80,13 @@ export default function SeriesDetailsPage() {
                             }
                         >
                             <A
-                                href={buildPlayerHref(details()?.fullLink || seriesUrl, lastSeasonLink())}
+                                href={buildPlayerHref(
+                                    details()?.fullLink || seriesUrl,
+                                    lastSeasonLink(),
+                                    details()?.title,
+                                    normalizeImageUrl(details()?.image || ''),
+                                    fromParam
+                                )}
                                 class="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold text-sm py-2.5 px-4 rounded-lg shadow-lg transition-all duration-200 active:scale-95 shrink-0"
                             >
                                 <i class="fa-solid fa-play text-black text-sm"></i>

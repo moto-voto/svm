@@ -7,6 +7,7 @@ import {
     formatSeasonsLabel,
     formatRating,
     buildPlayerHref,
+    resolveBackHref,
     RATING_FALLBACK,
     PLACEHOLDER_POSTER,
 } from '../../src/ui/series-details.js';
@@ -58,4 +59,43 @@ test('buildPlayerHref appends the last played season when provided', () => {
         '/series?url=https%3A%2F%2Fseasonvar.ru%2Fserial-1.html&season=https%3A%2F%2Fseasonvar.ru%2Fserial-1%2F2-season.html'
     );
     assert.equal(buildPlayerHref('', ''), '/series?url=');
+});
+
+test('buildPlayerHref carries title and image metadata for the watch history', () => {
+    assert.equal(
+        buildPlayerHref('https://seasonvar.ru/serial-1.html', '', 'Игра престолов', 'https://x/p.jpg'),
+        '/series?url=https%3A%2F%2Fseasonvar.ru%2Fserial-1.html' +
+            '&title=%D0%98%D0%B3%D1%80%D0%B0%20%D0%BF%D1%80%D0%B5%D1%81%D1%82%D0%BE%D0%BB%D0%BE%D0%B2' +
+            '&image=https%3A%2F%2Fx%2Fp.jpg'
+    );
+});
+
+test('buildPlayerHref omits empty metadata', () => {
+    assert.equal(
+        buildPlayerHref('https://seasonvar.ru/serial-1.html', 's1', '', ''),
+        '/series?url=https%3A%2F%2Fseasonvar.ru%2Fserial-1.html&season=s1'
+    );
+    assert.equal(
+        buildPlayerHref('https://seasonvar.ru/serial-1.html', undefined, '', undefined),
+        '/series?url=https%3A%2F%2Fseasonvar.ru%2Fserial-1.html'
+    );
+});
+
+test('buildPlayerHref carries the origin (from) through to the player', () => {
+    assert.equal(
+        buildPlayerHref('https://seasonvar.ru/serial-1.html', 's1', 'A', 'img', 'history'),
+        '/series?url=https%3A%2F%2Fseasonvar.ru%2Fserial-1.html&season=s1&title=A&image=img&from=history'
+    );
+    assert.equal(
+        buildPlayerHref('https://seasonvar.ru/serial-1.html', undefined, undefined, undefined, ''),
+        '/series?url=https%3A%2F%2Fseasonvar.ru%2Fserial-1.html'
+    );
+});
+
+test('resolveBackHref returns to the origin page', () => {
+    assert.equal(resolveBackHref('history'), '/history');
+    assert.equal(resolveBackHref(''), '/');
+    assert.equal(resolveBackHref(undefined), '/');
+    assert.equal(resolveBackHref(null), '/');
+    assert.equal(resolveBackHref('search'), '/');
 });

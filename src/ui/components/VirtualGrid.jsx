@@ -1,18 +1,31 @@
-import { createSignal, createMemo, createEffect, onMount, onCleanup, For } from 'solid-js';
+import { createSignal, createMemo, createEffect, onMount, onCleanup, For, Show } from 'solid-js';
 import { A } from '@solidjs/router';
 import { computeLayout, computeVisibleIndices, positionFor, formatGridStats, anchorFor, scrollPositionForAnchor } from '../grid-layout.js';
 
-/** @import { SerialDescription } from '../../parser/search.js' */
+/**
+ * Item shape the grid renders. SerialDescription (search page) satisfies it
+ * structurally; the optional season/episode fields carry the history page's
+ * corner badges.
+ * @typedef {Object} GridItem
+ * @property {string} title
+ * @property {string | null} image
+ * @property {string} fullLink
+ * @property {number | null | undefined} [seasonNumber]
+ * @property {number | null | undefined} [episodeNumber]
+ */
 
 /**
  * Windowed / virtualized poster grid. Only the DOM nodes near the viewport are
  * mounted, keeping large result sets fast on mobile.
  *
  * @param {{
- *   items: SerialDescription[],
+ *   items: GridItem[],
+ *   topLeftBadge?: (item: GridItem) => string | null,
+ *   topRightBadge?: (item: GridItem) => string | null,
  *   onStats?: (stats: string) => void,
  *   onViewportChange?: (anchor: { index: number, offset: number }) => void,
  *   restoreAnchor?: { index: number, offset: number } | null,
+ *   detailsFrom?: string,
  * }} props
  */
 export default function VirtualGrid(props) {
@@ -140,9 +153,11 @@ export default function VirtualGrid(props) {
             <For each={visibleIndices()}>
                 {(index) => {
                     const item = () => props.items[index];
+                    const topLeft = () => props.topLeftBadge?.(item());
+                    const topRight = () => props.topRightBadge?.(item());
                     return (
                         <A
-                            href={`/series-details?url=${encodeURIComponent(item().fullLink)}`}
+                            href={`/series-details?url=${encodeURIComponent(item().fullLink)}${props.detailsFrom ? `&from=${encodeURIComponent(props.detailsFrom)}` : ''}`}
                             class="poster-card"
                             style={position(index)}
                         >
@@ -150,6 +165,16 @@ export default function VirtualGrid(props) {
                                 class="poster-bg"
                                 style={{ 'background-image': `url('${item().image ?? ''}')` }}
                             />
+                            <Show when={topLeft()}>
+                                <span class="absolute top-1.5 left-1.5 z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-black/70 text-brand-orange border border-brand-orange/30">
+                                    {topLeft()}
+                                </span>
+                            </Show>
+                            <Show when={topRight()}>
+                                <span class="absolute top-1.5 right-1.5 z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-black/70 text-gray-100 border border-white/15">
+                                    {topRight()}
+                                </span>
+                            </Show>
                             <div class="card-overlay">
                                 <h2 class="text-xs sm:text-sm font-bold text-white leading-snug text-shadow-sm line-clamp-2">
                                     {item().title}

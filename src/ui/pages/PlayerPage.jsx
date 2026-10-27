@@ -8,10 +8,13 @@ import {
     saveEpisodeProgress,
     loadSeriesProgress,
     saveSeriesProgress,
+    saveWatchHistory,
     resolveResumeState,
     resolveResumeSeasonLink,
     PROGRESS_SAVE_INTERVAL_MS,
 } from '../watch-progress.js';
+import { normalizeImageUrl } from '../series-details.js';
+import { invalidateHistoryState } from '../history-state.js';
 import {
     progressPercent,
     seekTimeFromPercent,
@@ -37,6 +40,13 @@ export default function PlayerPage() {
     const [searchParams] = useSearchParams();
     const seriesUrl = String(searchParams.url || '');
     const seasonParam = String(searchParams.season || '');
+    // Series metadata passed by the details page (see `buildPlayerHref`) so
+    // the watch history can show the title and cover without extra requests.
+    const titleParam = String(searchParams.title || '');
+    const imageParam = String(searchParams.image || '');
+    // Where the details page was reached from ("history"), kept so the player's
+    // back arrow returns to the details page with the same context.
+    const fromParam = String(searchParams.from || '');
 
     /** @type {HTMLVideoElement | undefined} */
     let video;
@@ -155,6 +165,30 @@ export default function PlayerPage() {
     }
 
     /**
+     * Record the series' last watch point in the IndexedDB watch history so
+     * the History page can list it (title, cover, Sxx/Exx badges, newest
+     * first) without any backend request. Series metadata comes from the
+     * player URL set by the details page; when it is missing (deep link) the
+     * merge keeps whatever values the stored entry already had.
+     * @param {number} episodeIndex 0-based episode index
+     */
+    function persistWatchHistory(episodeIndex) {
+        const season = currentSeason();
+        if (!season) return;
+        // The stored history-page snapshot is stale from now on: force the
+        // next visit to re-read IndexedDB instead of showing the old listing.
+        invalidateHistoryState();
+        saveWatchHistory(seriesKey(), {
+            title: titleParam,
+            image: normalizeImageUrl(imageParam) || null,
+            fullLink: seriesUrl,
+            lastSeasonLink: season.link,
+            seasonNumber: selectedSeasonIndex() + 1,
+            episodeNumber: episodeIndex + 1,
+        }).catch(() => {});
+    }
+
+    /**
      * Resume the current season from the last played episode/position. Falls
      * back to the first episode when no (valid) record exists.
      */
@@ -225,6 +259,7 @@ export default function PlayerPage() {
         // Persist the episode we are leaving before switching.
         if (epIdx !== currentEpisodeIndex()) persistProgress(true);
         setCurrentEpisodeIndex(epIdx);
+        persistWatchHistory(epIdx);
         pendingSeek = startTime;
         switchingEpisode = true;
         video.src = ep.file;
@@ -705,7 +740,7 @@ export default function PlayerPage() {
                     <div class="flex items-center justify-between w-full">
                         <div class="flex items-center space-x-4">
                             <A
-                                href={`/series-details?url=${encodeURIComponent(seriesUrl)}`}
+                                href={`/series-details?url=${encodeURIComponent(seriesUrl)}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ''}`}
                                 class="text-white hover:text-blue-400 p-2 transition-colors"
                             >
                                 <i class="fa-solid fa-arrow-left text-xl sm:text-2xl"></i>

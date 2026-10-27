@@ -20,15 +20,24 @@
  * { key: seriesId, seriesId, lastSeasonLink, updatedAt }
  * ```
  *
+ * A compact watch-history entry is also kept per series so the History page
+ * can render tiles (title, cover, last season/episode) without a request:
+ *
+ * ```js
+ * { key: seriesId, seriesId, title, image, fullLink, lastSeasonLink,
+ *   seasonNumber, episodeNumber, updatedAt }
+ * ```
+ *
  * All pure helpers are exported separately so they can be unit tested without
  * a DOM/IndexedDB environment. The async helpers degrade gracefully to no-ops
  * when IndexedDB is unavailable (SSR / tests / private-mode failures).
  */
 
 export const DB_NAME = 'svm-watch-progress';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 export const STORE_NAME = 'seasonProgress';
 export const SERIES_STORE_NAME = 'seriesProgress';
+export const HISTORY_STORE_NAME = 'watchHistory';
 
 /** How often `timeupdate` may flush progress to disk (ms). */
 export const PROGRESS_SAVE_INTERVAL_MS = 5000;
@@ -116,6 +125,109 @@ export function resolveResumeSeasonLink(record, seasons) {
     return seasons.some((season) => season && season.link === link) ? link : null;
 }
 
+/**
+ * Merge the last watch position/context into an existing history record.
+ * `title`/`image`/`fullLink` are only overwritten when the update provides a
+ * truthy value, so a player opened without series metadata (e.g. a deep
+ * link) keeps the previously stored name and cover. Returns a fresh object
+ * (no mutation).
+ * @param {WatchHistoryRecord | null | undefined} existing
+ * @param {{
+ *   seriesId: string,
+ *   title?: string,
+ *   image?: string | null,
+ *   fullLink?: string,
+ *   lastSeasonLink?: string,
+ *   seasonNumber?: number,
+ *   episodeNumber?: number,
+ * }} update
+ * @returns {WatchHistoryRecord}
+ */
+export function buildHistoryRecord(existing, update) {
+    const { seriesId, title, image, fullLink, lastSeasonLink, seasonNumber, episodeNumber } = update;
+    /** @type {WatchHistoryRecord} */
+    const record = {
+        ...(existing || {}),
+        key: seriesId,
+        seriesId,
+        title: existing?.title ?? '',
+        image: existing?.image ?? null,
+        fullLink: existing?.fullLink ?? '',
+        lastSeasonLink: lastSeasonLink ?? existing?.lastSeasonLink ?? '',
+        seasonNumber: seasonNumber ?? existing?.seasonNumber ?? null,
+        episodeNumber: episodeNumber ?? existing?.episodeNumber ?? null,
+        updatedAt: Date.now(),
+    };
+    if (title) record.title = title;
+    if (image) record.image = image;
+    if (fullLink) record.fullLink = fullLink;
+    return record;
+}
+
+/**
+ * Sort history records by most recently watched first. Does not mutate the
+ * input (stable for records with equal timestamps).
+ * @param {WatchHistoryRecord[]} records
+ * @returns {WatchHistoryRecord[]}
+ */
+export function sortHistoryByRecent(records) {
+    return [...(records || [])].sort((a, b) => (b?.updatedAt || 0) - (a?.updatedAt || 0));
+}
+
+/**
+ * Case-insensitive title filter used by the history page's search box.
+ * An empty/whitespace query returns everything.
+ * @param {WatchHistoryRecord[]} records
+ * @param {string} query
+ * @returns {WatchHistoryRecord[]}
+ */
+export function filterHistoryByQuery(records, query) {
+    const q = String(query ?? '').trim().toLowerCase();
+    if (!q) return records;
+    return records.filter((record) => String(record?.title ?? '').toLowerCase().includes(q));
+}
+
+/**
+ * Map a stored history record to the tile shape consumed by VirtualGrid.
+ * @param {WatchHistoryRecord} record
+ * @returns {HistoryTile}
+ */
+export function toHistoryTile(record) {
+    return {
+        id: record?.seriesId || '',
+        title: record?.title || '',
+        image: record?.image || null,
+        fullLink: record?.fullLink || '',
+        seasonNumber: record?.seasonNumber,
+        episodeNumber: record?.episodeNumber,
+    };
+}
+
+/**
+ * Turn stored history into searchable, clickable grid tiles: filter by the
+ * query, drop records that cannot be opened (missing series link) and map
+ * each remaining record to the tile shape.
+ * @param {WatchHistoryRecord[]} records
+ * @param {string} query
+ * @returns {HistoryTile[]}
+ */
+export function buildHistoryTiles(records, query) {
+    return filterHistoryByQuery(records, query)
+        .filter((record) => record && record.fullLink)
+        .map(toHistoryTile);
+}
+
+/**
+ * Zero-pad a 1-based season/episode number for cover-corner badges
+ * ("S01", "E05"). Returns null for values that cannot be shown.
+ * @param {number | null | undefined} number
+ * @returns {string | null}
+ */
+export function padBadgeNumber(number) {
+    if (typeof number !== 'number' || !Number.isInteger(number) || number < 1) return null;
+    return String(number).padStart(2, '0');
+}
+
 /** @type {Promise<IDBDatabase | null> | undefined} */
 let dbPromise;
 
@@ -136,6 +248,9 @@ export function openProgressDB() {
             }
             if (!db.objectStoreNames.contains(SERIES_STORE_NAME)) {
                 db.createObjectStore(SERIES_STORE_NAME, { keyPath: 'key' });
+            }
+            if (!db.objectStoreNames.contains(HISTORY_STORE_NAME)) {
+                db.createObjectStore(HISTORY_STORE_NAME, { keyPath: 'key' });
             }
         };
         request.onsuccess = () => resolve(request.result);
@@ -270,6 +385,67 @@ export async function saveSeriesProgress(seriesId, seasonLink) {
 }
 
 /**
+ * Read the full watch history, most recently watched first. Resolves an
+ * empty array when IndexedDB is unavailable.
+ * @returns {Promise<WatchHistoryRecord[]>}
+ */
+export async function loadWatchHistory() {
+    const db = await openProgressDB();
+    if (!db) return [];
+    return new Promise((resolve) => {
+        let request;
+        try {
+            request = db.transaction(HISTORY_STORE_NAME, 'readonly').objectStore(HISTORY_STORE_NAME).getAll();
+        } catch {
+            resolve([]);
+            return;
+        }
+        request.onsuccess = () => resolve(sortHistoryByRecent(request.result || []));
+        request.onerror = () => resolve([]);
+    });
+}
+
+/**
+ * Persist/update the history entry for a series — the last watched season
+ * and episode plus the series metadata needed to render a tile. Returns
+ * false when IndexedDB is unavailable.
+ * @param {string} seriesId
+ * @param {{
+ *   title?: string,
+ *   image?: string | null,
+ *   fullLink?: string,
+ *   lastSeasonLink?: string,
+ *   seasonNumber?: number,
+ *   episodeNumber?: number,
+ * }} update
+ * @returns {Promise<boolean>}
+ */
+export async function saveWatchHistory(seriesId, update) {
+    const db = await openProgressDB();
+    if (!db) return false;
+    return new Promise((resolve) => {
+        let tx;
+        try {
+            tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
+        } catch {
+            resolve(false);
+            return;
+        }
+        const store = tx.objectStore(HISTORY_STORE_NAME);
+        const getRequest = store.get(seriesId);
+        getRequest.onsuccess = () => {
+            store.put(buildHistoryRecord(getRequest.result, { seriesId, ...update }));
+        };
+        getRequest.onerror = () => {
+            store.put(buildHistoryRecord(null, { seriesId, ...update }));
+        };
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+    });
+}
+
+/**
  * @typedef SeasonProgress
  * @property {string} key
  * @property {string} seriesId
@@ -285,4 +461,28 @@ export async function saveSeriesProgress(seriesId, seasonLink) {
  * @property {string} seriesId
  * @property {string} lastSeasonLink
  * @property {number} updatedAt
+ */
+
+/**
+ * @typedef WatchHistoryRecord
+ * @property {string} key
+ * @property {string} seriesId
+ * @property {string} title
+ * @property {string | null} image
+ * @property {string} fullLink
+ * @property {string} lastSeasonLink
+ * @property {number | null} seasonNumber 1-based
+ * @property {number | null} episodeNumber 1-based
+ * @property {number} updatedAt epoch ms of the last watch activity
+ */
+
+/**
+ * Tile shape consumed by the history page's virtual grid.
+ * @typedef HistoryTile
+ * @property {string} id
+ * @property {string} title
+ * @property {string | null} image
+ * @property {string} fullLink
+ * @property {number | null} seasonNumber
+ * @property {number | null} episodeNumber
  */

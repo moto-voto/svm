@@ -14,8 +14,17 @@ Pages:
   navigation) without a new request when returning from `SeriesDetailsPage`,
   including the scroll position in the grid (viewport anchor, see `anchorFor` in
   `grid-layout.js`); a reload intentionally starts fresh — the URL query is the
-  durable state
-- `pages/PlayerPage.jsx` — MX-Player style video player (formerly `player.ejs`)
+  durable state; the header offers a link to the watch-history page
+- `pages/HistoryPage.jsx` — the watch-history view: the same virtualized poster
+  grid, but the tiles come from the IndexedDB watch-history store instead of a
+  backend search. Sorted most-recently-watched first, filterable with the same
+  search box ("Поиск в истории..."), and each tile shows the last watched
+  season/episode as S01/E05 badges in the cover corners. Tiles link to the
+  series details exactly like search results
+- `pages/PlayerPage.jsx` — MX-Player style video player (formerly `player.ejs`);
+  records the last watch point (season/episode numbers + metadata passed via the
+  player URL) into the watch-history store so the History page needs no backend
+  requests
 - `pages/SeriesDetailsPage.jsx` — series details card (formerly `series-details.ejs`)
 
 ## Tooling decision
@@ -151,9 +160,13 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
   - `src/ui/grid-layout.js` (virtualized-grid math + stats label)
   - `src/ui/gestures.js` (`resolveGesture` touch decision logic)
   - `src/ui/player.js` (progress/seek, tap/keyboard decisions, index helpers)
-  - `src/ui/watch-progress.js` (IndexedDB watch-progress keys/resume/merge helpers)
+  - `src/ui/watch-progress.js` (IndexedDB watch-progress keys/resume/merge helpers
+    **plus the watch-history store**: `saveWatchHistory`/`loadWatchHistory`,
+    `sortHistoryByRecent`, `filterHistoryByQuery`, `buildHistoryTiles`,
+    `padBadgeNumber`)
   - `src/ui/series-details.js` (poster/rating/label formatting)
   - `src/ui/search-state.js` (in-memory last-search store + restore/no-refetch decision)
+  - `src/ui/history-state.js` (in-memory last-history listing store + restore/no-refetch decision)
 
 Note: Solid *component* tests would require a DOM environment plus a JSX
 transform (e.g. `@solidjs/testing-library` + `happy-dom`), so frontend logic is
@@ -166,6 +179,7 @@ component behaviour is covered by the production build and manual checks.
 | Route              | Page                | Backend API                 |
 | ------------------ | ------------------- | --------------------------- |
 | `/`                | SearchPage          | `/api/search?q=`            |
+| `/history`         | HistoryPage         | none (IndexedDB watch history) |
 | `/series`          | PlayerPage          | `/api/series?url=`          |
 | `/series-details`  | SeriesDetailsPage   | `/api/series-details?url=`  |
 
@@ -184,13 +198,15 @@ src/ui/
 ├── utils.js                    # clamp, normalizeQuery, cleanTitle, formatTime, BASE_PATH/withBase
 ├── gestures.js                 # resolveGesture (touch decision logic)
 ├── player.js                   # player display/index/keyboard/tap helpers
-├── watch-progress.js            # IndexedDB watch-progress persistence
+├── watch-progress.js            # IndexedDB watch-progress + watch-history persistence
 ├── series-details.js           # series-details display helpers
 ├── search-state.js             # in-memory search state (back-nav restore)
+├── history-state.js            # in-memory history-listing state (back-nav restore)
 ├── grid-layout.js              # virtualized-grid layout math
 ├── styles.css                  # global styles (search page / shared)
 ├── pages/
 │   ├── SearchPage.jsx          # virtualized poster grid
+│   ├── HistoryPage.jsx         # watch-history poster grid (IndexedDB-backed)
 │   ├── PlayerPage.jsx          # MX-Player style video player
 │   ├── SeriesDetailsPage.jsx   # series details card
 │   └── player.css              # player-specific styles

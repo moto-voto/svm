@@ -1,5 +1,5 @@
 import { createSignal, onMount, onCleanup, Show } from 'solid-js';
-import { useSearchParams } from '@solidjs/router';
+import { useSearchParams, A } from '@solidjs/router';
 import Header from '../components/Header.jsx';
 import VirtualGrid from '../components/VirtualGrid.jsx';
 import { searchSeries } from '../api.js';
@@ -96,11 +96,22 @@ export default function SearchPage() {
             <Header
                 maxWidth="max-w-7xl"
                 topRight={
-                    <Show when={stats()}>
-                        <span class="text-xs bg-brand-orange/15 text-brand-orange font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
-                            {stats()}
-                        </span>
-                    </Show>
+                    <div class="flex items-center gap-2">
+                        <A
+                            href="/history"
+                            noScroll
+                            title="История просмотра"
+                            class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-[#222226] hover:bg-[#2c2c32] hover:text-brand-orange text-gray-300 border border-neutral-700/60 transition-colors whitespace-nowrap"
+                        >
+                            <i class="fa-solid fa-clock-rotate-left text-brand-orange"></i>
+                            <span class="hidden sm:inline">История</span>
+                        </A>
+                        <Show when={stats()}>
+                            <span class="text-xs bg-brand-orange/15 text-brand-orange font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
+                                {stats()}
+                            </span>
+                        </Show>
+                    </div>
                 }
             >
                 <form
