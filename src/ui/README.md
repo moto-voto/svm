@@ -16,10 +16,12 @@ Pages:
   `grid-layout.js`); a reload intentionally starts fresh — the URL query is the
   durable state
 - `pages/FilterPage.jsx` — the genre/country filter view (`/filter`): the same
-  virtualized poster grid fed by `/api/series-filter`. The genre and country
-  dropdowns apply immediately on change (`?g=<genre id>&c=<country>` in the
-  URL); a bare `/filter` URL reuses the last filter of the session, otherwise
-  it browses the whole catalog; scroll position is restored on back-navigation
+  virtualized poster grid fed by `/api/series-filter`. The genre, country and
+  sort dropdowns (sort = `filter_sortTo`: name, kinopoisk, imdb, god,
+  view, newest) apply immediately on change (`?g=<genre id>&c=<country>&s=<sort>`
+  in the URL); a bare `/filter` URL reuses the last filter of the session,
+  otherwise it browses the whole catalog; scroll position is restored on
+  back-navigation
 - `pages/HistoryPage.jsx` — the watch-history view: the same virtualized poster
   grid, but the tiles come from the IndexedDB watch-history store instead of a
   backend search. Sorted most-recently-watched first, filterable with the same

@@ -43,13 +43,15 @@ export async function searchSeries(query) {
 
 /**
  * Fetch series filtered by genre and/or country (`/api/series-filter`). Pass
- * the ALL_VALUE ('all') to leave either dimension unconstrained.
+ * the ALL_VALUE ('all') to leave a dimension unconstrained, and the DEFAULT
+ * SORT ('name') for the backend-default ordering.
  * @param {string} genre genre id ('all' when unset)
  * @param {string} country country name ('all' when unset)
+ * @param {string} sort sort option ('name' when unset)
  * @returns {Promise<SerialDescription[]>}
  */
-export async function filterSeries(genre, country) {
-    const query = buildFilterApiQuery(genre, country);
+export async function filterSeries(genre, country, sort) {
+    const query = buildFilterApiQuery(genre, country, sort);
     const data = await cachedApi(withBase(`/api/series-filter${query}`));
     if (!Array.isArray(data)) {
         throw new Error('Unexpected response from server');

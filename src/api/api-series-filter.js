@@ -56,7 +56,7 @@ export async function apiSeriesFilter(params) {
         formData.append('filter[quotC][]', filter_quotC);
     }
 
-    formData.append('filter[sortTo]', filter_sortTo || 'name');
+    formData.append('filter[sortTo][]', filter_sortTo || 'name');
     formData.append('filter[engName]', filter_engName || '');
     formData.append('filter[only]', filter_only || '');
     formData.append('filter[rait]', filter_raiT || 'kp');

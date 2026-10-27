@@ -13,6 +13,19 @@
 /** Value meaning "no filter" for both genre and country selects. */
 export const ALL_VALUE = 'all';
 
+/** Default (backend-selected) sort option. */
+export const DEFAULT_SORT = 'name';
+
+/** @type {FilterOption[]} */
+export const SORT_OPTIONS = [
+    { value: 'name', label: 'По названию' },
+    { value: 'kinopoisk', label: 'По kinopoisk' },
+    { value: 'imdb', label: 'По imdb' },
+    { value: 'god', label: 'По году' },
+    { value: 'view', label: 'По популярности' },
+    { value: 'newest', label: 'По добавлению' },
+];
+
 /** @type {FilterOption[]} */
 export const GENRES = [
     { value: 'all', label: 'Любой жанр' },
@@ -162,18 +175,33 @@ export function normalizeFilterValue(value) {
 }
 
 /**
- * Build the query-string part for the series-filter API from a genre id and a
- * country name. `all` values are omitted (the backend then returns the whole
- * catalog). Returns '' when no filter is active.
+ * Normalize a raw sort value: null/undefined/whitespace become
+ * `DEFAULT_SORT`, anything else is trimmed.
+ * @param {string | null | undefined} value
+ * @returns {string}
+ */
+export function normalizeSortValue(value) {
+    const v = String(value ?? '').trim();
+    return v || DEFAULT_SORT;
+}
+
+/**
+ * Build the query-string part for the series-filter API from a genre id, a
+ * country name and a sort option. `all` values and the default sort are
+ * omitted (the backend then returns the whole catalog in the default order).
+ * Returns '' when no filter is active.
  * @param {string | null | undefined} genre
  * @param {string | null | undefined} country
- * @returns {string} e.g. `?filter_quotG=19&filter_quotC=%D0%A1%D0%A8%D0%90`
+ * @param {string | null | undefined} sort
+ * @returns {string} e.g. `?filter_quotG=19&filter_quotC=%D0%A1%D0%A8%D0%90&filter_sortTo=imdb`
  */
-export function buildFilterApiQuery(genre, country) {
+export function buildFilterApiQuery(genre, country, sort) {
     const params = [];
     const g = normalizeFilterValue(genre);
     const c = normalizeFilterValue(country);
+    const s = normalizeSortValue(sort);
     if (g !== ALL_VALUE) params.push(`filter_quotG=${encodeURIComponent(g)}`);
     if (c !== ALL_VALUE) params.push(`filter_quotC=${encodeURIComponent(c)}`);
+    if (s !== DEFAULT_SORT) params.push(`filter_sortTo=${encodeURIComponent(s)}`);
     return params.length ? `?${params.join('&')}` : '';
 }

@@ -5,13 +5,12 @@ import ViewSwitcher from '../components/ViewSwitcher.jsx';
 import VirtualGrid from '../components/VirtualGrid.jsx';
 import { filterSeries } from '../api.js';
 import { getStoredFilterState, saveFilterState, resolveFilterRestore } from '../filter-state.js';
-import { GENRES, COUNTRIES, ALL_VALUE } from '../filter-options.js';
+import { GENRES, COUNTRIES, SORT_OPTIONS, ALL_VALUE, DEFAULT_SORT } from '../filter-options.js';
 
 /**
- * Genre/country filter view (`/filter`): the same virtualized poster grid as
- * the search page, but fed by `/api/series-filter`. The genre and country
- * dropdowns apply immediately on change; results are sorted/displayed by the
- * backend and carry no cover art (the grid renders a fallback tile).
+ * Genre/country/sort filter view (`/filter`): the same virtualized poster
+ * grid as the search page, but fed by `/api/series-filter`. The genre,
+ * country and sort dropdowns apply immediately on change.
  */
 export default function FilterPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -22,24 +21,26 @@ export default function FilterPage() {
         return Array.isArray(value) ? value[0] : value;
     };
 
-    // A URL with `?g=`/`?c=` wins (deep link / reload); a bare `/filter` URL
-    // reuses the last filter applied in this session (see resolveFilterRestore).
+    // A URL with `?g=`/`?c=`/`?s=` wins (deep link / reload); a bare `/filter`
+    // URL reuses the last filter applied in this session (see resolveFilterRestore).
     const stored = getStoredFilterState();
-    const { genre: effectiveGenre, country: effectiveCountry, restored: restoredState } = resolveFilterRestore(
-        rawParam('g'),
-        rawParam('c'),
-        stored
-    );
+    const {
+        genre: effectiveGenre,
+        country: effectiveCountry,
+        sort: effectiveSort,
+        restored: restoredState,
+    } = resolveFilterRestore(rawParam('g'), rawParam('c'), rawParam('s'), stored);
 
     const [items, setItems] = createSignal(restoredState ? restoredState.items : []);
     const [loading, setLoading] = createSignal(!restoredState);
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
     const [stats, setStats] = createSignal(restoredState ? restoredState.stats : '0 / 0');
 
-    // `genre`/`country` are the select values; they are also the applied ones
-    // — the filter fires immediately on change.
+    // `genre`/`country`/`sort` are the select values; they are also the
+    // applied ones — the filter fires immediately on change.
     const [genre, setGenre] = createSignal(effectiveGenre);
     const [country, setCountry] = createSignal(effectiveCountry);
+    const [sort, setSort] = createSignal(effectiveSort);
 
     // Where the user is in the grid (top-most visible item + offset, see
     // `anchorFor` in grid-layout.js). Kept in a plain variable by VirtualGrid
@@ -49,31 +50,44 @@ export default function FilterPage() {
     /** Persist the current results and viewport position. */
     const persist = () => {
         if (!items().length) return;
-        saveFilterState({ items: items(), stats: stats(), genre: genre(), country: country(), anchor: latestAnchor });
+        saveFilterState({
+            items: items(),
+            stats: stats(),
+            genre: genre(),
+            country: country(),
+            sort: sort(),
+            anchor: latestAnchor,
+        });
     };
 
     /**
-     * Apply a filter (genre id / country name, `'all'` = unconstrained) and
-     * keep the URL shareable.
+     * Apply a filter (genre id, country name, sort option; `'all'` =
+     * unconstrained) and keep the URL shareable.
      * @param {string} g
      * @param {string} c
+     * @param {string} s
      */
-    const load = async (g, c) => {
+    const load = async (g, c, s) => {
         setLoading(true);
         setError(null);
         latestAnchor = null; // a new result set starts at the top
 
         setGenre(g);
         setCountry(c);
+        setSort(s);
         setSearchParams(
-            { g: g === ALL_VALUE ? undefined : g, c: c === ALL_VALUE ? undefined : c },
+            {
+                g: g === ALL_VALUE ? undefined : g,
+                c: c === ALL_VALUE ? undefined : c,
+                s: s === DEFAULT_SORT ? undefined : s,
+            },
             { replace: true }
         );
 
         try {
-            const results = await filterSeries(g, c);
+            const results = await filterSeries(g, c, s);
             setItems(results);
-            saveFilterState({ items: results, stats: stats(), genre: g, country: c, anchor: null });
+            saveFilterState({ items: results, stats: stats(), genre: g, country: c, sort: s, anchor: null });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error: ' + String(err));
             setItems([]);
@@ -91,11 +105,12 @@ export default function FilterPage() {
             {
                 g: genre() === ALL_VALUE ? undefined : genre(),
                 c: country() === ALL_VALUE ? undefined : country(),
+                s: sort() === DEFAULT_SORT ? undefined : sort(),
             },
             { replace: true }
         );
         if (!restoredState) {
-            load(effectiveGenre, effectiveCountry);
+            load(effectiveGenre, effectiveCountry, effectiveSort);
         }
     });
 
@@ -118,7 +133,7 @@ export default function FilterPage() {
                     </Show>
                 }
             >
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <label class="flex items-center gap-2 bg-[#2d2d2d] border border-neutral-700/60 rounded overflow-hidden focus-within:border-brand-orange transition-colors">
                         <i class="fa-solid fa-tags text-xs text-brand-orange pl-3 shrink-0"></i>
                         <select
@@ -126,7 +141,7 @@ export default function FilterPage() {
                             disabled={loading()}
                             onChange={(event) => {
                                 const g = event.currentTarget.value;
-                                load(g, country());
+                                load(g, country(), sort());
                             }}
                             class="w-full py-2.5 pr-3 text-sm bg-transparent text-neutral-100 focus:outline-none disabled:opacity-60"
                         >
@@ -142,11 +157,27 @@ export default function FilterPage() {
                             disabled={loading()}
                             onChange={(event) => {
                                 const c = event.currentTarget.value;
-                                load(genre(), c);
+                                load(genre(), c, sort());
                             }}
                             class="w-full py-2.5 pr-3 text-sm bg-transparent text-neutral-100 focus:outline-none disabled:opacity-60"
                         >
                             <For each={COUNTRIES}>
+                                {(option) => <option value={option.value}>{option.label}</option>}
+                            </For>
+                        </select>
+                    </label>
+                    <label class="flex items-center gap-2 bg-[#2d2d2d] border border-neutral-700/60 rounded overflow-hidden focus-within:border-brand-orange transition-colors">
+                        <i class="fa-solid fa-arrow-down-wide-short text-xs text-brand-orange pl-3 shrink-0"></i>
+                        <select
+                            value={sort()}
+                            disabled={loading()}
+                            onChange={(event) => {
+                                const s = event.currentTarget.value;
+                                load(genre(), country(), s);
+                            }}
+                            class="w-full py-2.5 pr-3 text-sm bg-transparent text-neutral-100 focus:outline-none disabled:opacity-60"
+                        >
+                            <For each={SORT_OPTIONS}>
                                 {(option) => <option value={option.value}>{option.label}</option>}
                             </For>
                         </select>

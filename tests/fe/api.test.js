@@ -71,6 +71,20 @@ test('filterSeries sends genre/country and returns the array', async () => {
     }
 });
 
+test('filterSeries forwards the sort option', async () => {
+    const fetchMock = installFetch([{ match: '/api/series-filter', body: [] }]);
+    try {
+        await filterSeries('19', 'США', 'imdb');
+        assert.equal(
+            fetchMock.calls[0].url,
+            '/api/series-filter?filter_quotG=19&filter_quotC=%D0%A1%D0%A8%D0%90&filter_sortTo=imdb'
+        );
+    } finally {
+        fetchMock.restore();
+        clearApiCache();
+    }
+});
+
 test('filterSeries omits all values (whole-catalog listing)', async () => {
     const fetchMock = installFetch([{ match: '/api/series-filter', body: [] }]);
     try {
