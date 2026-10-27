@@ -1,5 +1,5 @@
 import { load } from "cheerio";
-
+import { isTag, isText } from "domhandler";
 
 /**
  * @typedef SeriesDetails
@@ -53,17 +53,18 @@ export function parseSeriesDetails(html) {
     function getInfoListText(labelText) {
         let textVal = null;
         $('.pgs-sinfo_list').each((_, el) => {
-            const fullText = $(el).text();
-            if (fullText.includes(labelText)) {
-                // Find the span or text following the label
-                const spanText = $(el).find('span').first().text().trim();
-                if (spanText) {
-                    textVal = spanText;
-                } else {
-                    // Fallback splitting by colon
-                    const parts = fullText.split(':');
-                    if (parts.length > 1) {
-                        textVal = parts[1].trim().split('\n')[0];
+            const nodes = $(el).contents().toArray();
+            for (let i = 0; i < nodes.length; i++) {
+                const node = nodes[i];
+                // TypeScript now knows this is a Text node -> node.data is safe
+                if (isText(node) && node.data.includes(labelText)) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const next = nodes[j];
+                        // TypeScript now knows this is an Element -> next.name is safe
+                        if (isTag(next) && next.name === 'span') {
+                            textVal = $(next).text().trim();
+                            return false; // break out of .each
+                        }
                     }
                 }
             }
