@@ -183,7 +183,7 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
     `padBadgeNumber`)
   - `src/ui/series-details.js` (poster/rating/label formatting)
   - `src/ui/search-state.js` (in-memory last-search store + restore/no-refetch decision)
-  - `src/ui/filter-state.js` (in-memory last-filter listing store + restore/no-refetch decision)
+  - `src/ui/filter-state.js` (last-filter listing store with localStorage persistence for values/sort + restore/no-refetch decision)
   - `src/ui/filter-options.js` (genre/country option lists for the `/api/series-filter` UI + query building)
   - `src/ui/history-state.js` (in-memory last-history listing store + restore/no-refetch decision)
   - `src/ui/bookmarks.js` (IndexedDB bookmarks store: `loadBookmarks`/`saveBookmark`/`removeBookmark`/`isBookmarked`, `sortBookmarksByAdded`, `buildBookmarkTiles`)
@@ -225,7 +225,7 @@ src/ui/
 ├── bookmarks.js                 # IndexedDB bookmarks persistence
 ├── series-details.js           # series-details display helpers
 ├── search-state.js             # in-memory search state (back-nav restore)
-├── filter-state.js             # in-memory filter-results state (back-nav restore)
+├── filter-state.js             # filter-results state with localStorage persistence for values/sort (back-nav restore)
 ├── filter-options.js           # genre/country option lists + filter query building
 ├── history-state.js            # in-memory history-listing state (back-nav restore)
 ├── bookmarks-state.js          # in-memory bookmarks-listing state (back-nav restore)

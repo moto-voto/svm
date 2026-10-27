@@ -7,6 +7,48 @@ import {
     resolveFilterRestore,
 } from '../../src/ui/filter-state.js';
 
+function createLocalStorage() {
+    const store = new Map();
+    return {
+        getItem(key) {
+            const value = store.get(String(key));
+            return value === undefined ? null : value;
+        },
+        setItem(key, value) {
+            store.set(String(key), String(value));
+        },
+        removeItem(key) {
+            store.delete(String(key));
+        },
+        clear() {
+            store.clear();
+        },
+    };
+}
+
+function withLocalStorage(fn) {
+    const original = globalThis.localStorage;
+    const storage = createLocalStorage();
+    Object.defineProperty(globalThis, 'localStorage', {
+        value: storage,
+        writable: true,
+        configurable: true,
+    });
+    try {
+        return fn(storage);
+    } finally {
+        if (original === undefined) {
+            delete globalThis.localStorage;
+        } else {
+            Object.defineProperty(globalThis, 'localStorage', {
+                value: original,
+                writable: true,
+                configurable: true,
+            });
+        }
+    }
+}
+
 test('resolveFilterRestore restores the last filter on a bare URL (switcher visit)', () => {
     // Clicking "Фильтр" in the view switcher lands on `/filter` (no params);
     // the session's last filter is reused.
@@ -101,4 +143,78 @@ test('saveFilterState remembers and replaces the last filter', () => {
 
     saveFilterState(null);
     assert.equal(getStoredFilterState(), null);
+});
+
+test('saveFilterState persists filter values to localStorage', () => {
+    withLocalStorage((storage) => {
+        saveFilterState(null);
+        const first = { items: [{ title: 'a' }], stats: '1 / 1', genre: '19', country: 'all', sort: 'name' };
+        saveFilterState(first);
+        const raw = storage.getItem('svm:filter:last');
+        assert.ok(raw);
+        assert.deepEqual(JSON.parse(raw), { genre: '19', country: 'all', sort: 'name' });
+
+        const second = { items: [], stats: '0 / 0', genre: 'all', country: 'США', sort: 'imdb' };
+        saveFilterState(second);
+        assert.deepEqual(JSON.parse(storage.getItem('svm:filter:last')), { genre: 'all', country: 'США', sort: 'imdb' });
+
+        saveFilterState(null);
+        assert.equal(storage.getItem('svm:filter:last'), null);
+    });
+});
+
+test('resolveFilterRestore reads filter values from localStorage on bare URL after reload', () => {
+    withLocalStorage((storage) => {
+        saveFilterState(null);
+        storage.setItem('svm:filter:last', JSON.stringify({ genre: '7', country: 'Россия', sort: 'view' }));
+        assert.deepEqual(resolveFilterRestore(undefined, undefined, undefined, null), {
+            genre: '7',
+            country: 'Россия',
+            sort: 'view',
+            restored: null,
+        });
+        saveFilterState(null);
+    });
+});
+
+test('resolveFilterRestore prefers localStorage over defaults on bare URL', () => {
+    withLocalStorage((storage) => {
+        saveFilterState(null);
+        storage.setItem('svm:filter:last', JSON.stringify({ genre: '1', country: 'all', sort: 'god' }));
+        assert.deepEqual(resolveFilterRestore(undefined, undefined, undefined, null), {
+            genre: '1',
+            country: 'all',
+            sort: 'god',
+            restored: null,
+        });
+        saveFilterState(null);
+    });
+});
+
+test('URL params take precedence over localStorage values', () => {
+    withLocalStorage((storage) => {
+        saveFilterState(null);
+        storage.setItem('svm:filter:last', JSON.stringify({ genre: '7', country: 'Россия', sort: 'view' }));
+        assert.deepEqual(resolveFilterRestore('19', undefined, undefined, null), {
+            genre: '19',
+            country: 'all',
+            sort: 'name',
+            restored: null,
+        });
+        saveFilterState(null);
+    });
+});
+
+test('localStorage values are normalized on read', () => {
+    withLocalStorage((storage) => {
+        saveFilterState(null);
+        storage.setItem('svm:filter:last', JSON.stringify({ genre: '  ', country: null, sort: '' }));
+        assert.deepEqual(resolveFilterRestore(undefined, undefined, undefined, null), {
+            genre: 'all',
+            country: 'all',
+            sort: 'name',
+            restored: null,
+        });
+        saveFilterState(null);
+    });
 });

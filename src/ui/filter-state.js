@@ -5,13 +5,15 @@
 // Same rationale as `search-state.js`: navigating to the details/player page
 // unmounts the filter page, but module-level state survives client-side
 // navigation, so coming back restores the filtered tiles and the viewport
-// position without a new request. A reload intentionally starts fresh — the
-// `?g=...&c=...` URL parameters are the durable state.
+// position without a new request. Filter values and sorting are also saved
+// in localStorage so they persist between page reloads.
 //
 
 /** @import { SerialDescription } from '../parser/search.js' */
 
 import { normalizeFilterValue, normalizeSortValue, ALL_VALUE, DEFAULT_SORT } from './filter-options.js';
+
+const STORAGE_KEY = 'svm:filter:last';
 
 /**
  * @typedef {Object} FilterState
@@ -24,6 +26,71 @@ import { normalizeFilterValue, normalizeSortValue, ALL_VALUE, DEFAULT_SORT } fro
  *   position: top-most visible item and the scroll offset past its top edge
  *   (see `anchorFor` in `grid-layout.js`) — restored when the user comes back
  */
+
+/** @typedef {Object} StoredFilterValues
+ * @property {string} [genre]
+ * @property {string} [country]
+ * @property {string} [sort]
+ */
+
+/**
+ * Safely access localStorage in environments where it may not exist.
+ * @returns {Storage | null}
+ */
+function getStorage() {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            return localStorage;
+        }
+    } catch {
+        // ignore
+    }
+    return null;
+}
+
+/**
+ * Load filter values from localStorage.
+ * @returns {{ genre: string, country: string, sort: string } | null}
+ */
+function loadFromStorage() {
+    const storage = getStorage();
+    if (!storage) return null;
+    try {
+        const raw = storage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        const genre = normalizeFilterValue(parsed.genre);
+        const country = normalizeFilterValue(parsed.country);
+        const sort = normalizeSortValue(parsed.sort);
+        return { genre, country, sort };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Save filter values to localStorage.
+ * @param {{ genre: string, country: string, sort: string } | null} values
+ */
+function saveToStorage(values) {
+    const storage = getStorage();
+    if (!storage) return;
+    try {
+        if (!values) {
+            storage.removeItem(STORAGE_KEY);
+            return;
+        }
+        const payload = {
+            genre: normalizeFilterValue(values.genre),
+            country: normalizeFilterValue(values.country),
+            sort: normalizeSortValue(values.sort),
+        };
+        storage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+        // ignore
+    }
+}
 
 /** @type {FilterState | null} */
 let state = null;
@@ -43,6 +110,11 @@ export function getStoredFilterState() {
  */
 export function saveFilterState(next) {
     state = next;
+    if (next) {
+        saveToStorage({ genre: next.genre, country: next.country, sort: next.sort });
+    } else {
+        saveToStorage(null);
+    }
 }
 
 /**
@@ -52,7 +124,8 @@ export function saveFilterState(next) {
  * win (deep link / reload) and the stored state is only reused when it
  * belongs to the same genre+country+sort triple. A bare `/filter` URL (no
  * parameters — e.g. coming from another view via the switcher) reuses the
- * last filter applied in this session, falling back to all/all/name.
+ * last filter applied in this session, falling back to values from
+ * localStorage, otherwise all/all/name.
  *
  * @param {string | undefined} rawGenre raw `?g=` value (undefined when absent)
  * @param {string | undefined} rawCountry raw `?c=` value (undefined when absent)
@@ -69,9 +142,16 @@ export function saveFilterState(next) {
  */
 export function resolveFilterRestore(rawGenre, rawCountry, rawSort, stored) {
     const urlProvided = rawGenre !== undefined || rawCountry !== undefined || rawSort !== undefined;
-    const genre = urlProvided ? normalizeFilterValue(rawGenre) : (stored?.genre ?? ALL_VALUE);
-    const country = urlProvided ? normalizeFilterValue(rawCountry) : (stored?.country ?? ALL_VALUE);
-    const sort = urlProvided ? normalizeSortValue(rawSort) : (stored?.sort ?? DEFAULT_SORT);
+    const storageValues = urlProvided ? null : loadFromStorage();
+    const genre = urlProvided
+        ? normalizeFilterValue(rawGenre)
+        : (stored?.genre ?? storageValues?.genre ?? ALL_VALUE);
+    const country = urlProvided
+        ? normalizeFilterValue(rawCountry)
+        : (stored?.country ?? storageValues?.country ?? ALL_VALUE);
+    const sort = urlProvided
+        ? normalizeSortValue(rawSort)
+        : (stored?.sort ?? storageValues?.sort ?? DEFAULT_SORT);
     const restored =
         stored && stored.genre === genre && stored.country === country && stored.sort === sort ? stored : null;
     return { genre, country, sort, restored };
