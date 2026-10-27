@@ -2,20 +2,38 @@ import { createSignal, onMount, onCleanup, Show } from 'solid-js';
 import { useSearchParams } from '@solidjs/router';
 import Header from '../components/Header.jsx';
 import VirtualGrid from '../components/VirtualGrid.jsx';
+import FilterHeader from '../components/FilterHeader.jsx';
+import FilterPanel from '../components/FilterPanel.jsx';
 import { searchSeries } from '../api.js';
 import { normalizeQuery } from '../utils.js';
-import { getStoredSearchState, saveSearchState, resolveSearchRestore } from '../search-state.js';
+import { getStoredSearchState, saveSearchState, resolveSearchRestore, getFilterState, setFilterState, clearFilters, buildFilterUrl, buildCombinedUrlQuery } from '../search-state.js';
 
 export default function SearchPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const urlQuery = normalizeQuery(Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q || '');
 
-    // Restore the previous search from the in-memory store (survives
-    // navigating to SeriesDetailsPage and back, but not a reload — the `?q=`
-    // URL parameter is the durable state). The URL query wins over the stored
-    // one, so shareable `/?q=...` links always search what the URL says.
+    // Parse filter URL parameters
+    const filterValue = searchParams.filter || '';
+    const genreValues = searchParams.genre;
+    const countryValues = searchParams.country;
+
     const stored = getStoredSearchState();
     const { query: effectiveQuery, restored: restoredState } = resolveSearchRestore(urlQuery, stored);
+
+    // Build combined URL query: q=... followed by filter parameters
+    const filterUrl = new URLSearchParams(
+        Array.from({ length: genreValues.length + countryValues.length + (filterValue ? 1 : 0) }, () => '')
+            .map((_, idx) => {
+                if (filterValue && idx === 0) return `filter=1`;
+                if (genreValues[idx]) return `genre=${genreValues[idx]}`;
+                if (countryValues[idx]) return `country=${countryValues[idx]}`;
+                return '';
+            })
+            .filter(Boolean)
+            .join('&')
+    ).toString();
+
+    const combinedUrlQuery = buildCombinedUrlQuery(urlQuery, filterUrl);
 
     const [items, setItems] = createSignal(restoredState ? restoredState.items : []);
     const [loading, setLoading] = createSignal(!restoredState);
@@ -45,18 +63,19 @@ export default function SearchPage() {
         event.preventDefault();
         const q = normalizeQuery(query());
         setQuery(q);
-        load(q);
+        load(q, false);
     };
 
     /**
      * Load results for a query from the backend and keep the URL shareable.
      * @param {string} q
+     * @param {boolean} resetAnchor - reset anchor to top of results
      */
-    const load = async (q) => {
+    const load = async (q, resetAnchor = true) => {
         setLoading(true);
         setError(null);
         setActiveQuery(q);
-        latestAnchor = null; // a new result set starts at the top
+        latestAnchor = resetAnchor ? null : latestAnchor;
 
         // Keep the URL shareable/bookmarkable.
         setSearchParams({ q: q || undefined }, { replace: true });
@@ -64,7 +83,7 @@ export default function SearchPage() {
         try {
             const results = await searchSeries(q);
             setItems(results);
-            saveSearchState({ items: results, stats: stats(), query: q, anchor: null });
+            saveSearchState({ items: results, stats: stats(), query: q, anchor: resetAnchor ? null : latestAnchor });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error: ' + String(err));
             setItems([]);
@@ -73,6 +92,14 @@ export default function SearchPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    /**
+     * Trigger a new search with current query and filters.
+     * Preserves viewport anchor if filters haven't changed.
+     */
+    const triggerSearch = () => {
+        load(activeQuery(), !filterUrl); // reset anchor only if filters changed
     };
 
     onMount(() => {
@@ -103,6 +130,7 @@ export default function SearchPage() {
                     </Show>
                 }
             >
+                <FilterHeader onSearch={triggerSearch} />
                 <form
                     class="w-full flex items-center shadow-inner rounded overflow-hidden bg-[#2d2d2d] border border-neutral-700/60 focus-within:border-brand-orange transition-colors"
                     onSubmit={handleSubmit}
@@ -161,6 +189,22 @@ export default function SearchPage() {
                     }}
                 />
             </main>
+
+            {/* Filter Panel Modal */}
+            <Show when={filterValue === '1'}>
+                <FilterPanel
+                    open={true}
+                    onClose={() => setSearchParams({ filter: undefined, genre: [], country: [] }, { replace: true })}
+                    activeFilters={{
+                        genre: genreValues,
+                        country: countryValues
+                    }}
+                    onApply={() => {
+                        triggerSearch();
+                        setSearchParams({ filter: undefined, genre: [], country: [] }, { replace: true });
+                    }}
+                />
+            </Show>
         </div>
     );
 }

@@ -62,3 +62,83 @@ export function resolveSearchRestore(urlQuery, stored) {
     const query = urlQuery || (stored?.query ?? '');
     return { query, restored: stored && stored.query === query ? stored : null };
 }
+
+/**
+ * @typedef {Object} FilterState
+ * @property {string[]} genreIds genre filter selection (empty array means "all")
+ * @property {string[]} countryIds country filter selection (empty array means "all")
+ * @property {boolean} isFilterMode whether the filter panel is open
+ */
+
+/** @type {FilterState} */
+let filterState = {
+    genreIds: [],
+    countryIds: [],
+    isFilterMode: false
+};
+
+/**
+ * Get the current filter state.
+ * @returns {FilterState}
+ */
+export function getFilterState() {
+    return filterState;
+}
+
+/**
+ * Set the filter state and trigger a new search.
+ * @param {Partial<FilterState>} updates
+ */
+export function setFilterState(updates) {
+    filterState = { ...filterState, ...updates };
+}
+
+/**
+ * Clear all filters and reset to filter mode off.
+ */
+export function clearFilters() {
+    filterState = {
+        genreIds: [],
+        countryIds: [],
+        isFilterMode: false
+    };
+}
+
+/**
+ * Build a filter URL string for deep linking and restore.
+ * @returns {string}
+ */
+export function buildFilterUrl() {
+    const params = new URLSearchParams();
+    if (filterState.isFilterMode) params.set('filter', '1');
+    filterState.genreIds.forEach((id) => params.set('genre', id));
+    filterState.countryIds.forEach((id) => params.set('country', id));
+    return params.toString();
+}
+
+/**
+ * Parse filter URL parameters.
+ * @param {string} url
+ * @returns {Partial<FilterState>}
+ */
+export function parseFilterUrl(url) {
+    if (!url) return {};
+    const params = new URLSearchParams(url);
+    const result = {};
+    if (params.get('filter') === '1') result.isFilterMode = true;
+    const genreIds = params.getAll('genre').filter(Boolean);
+    const countryIds = params.getAll('country').filter(Boolean);
+    if (genreIds.length) result.genreIds = genreIds;
+    if (countryIds.length) result.countryIds = countryIds;
+    return result;
+}
+
+/**
+ * Build a combined URL query string for the SearchPage router base.
+ * @param {string} urlQuery the `q=` value from the router
+ * @param {string} filterUrl filter URL from parseFilterUrl
+ * @returns {string}
+ */
+export function buildCombinedUrlQuery(urlQuery, filterUrl) {
+    return `${urlQuery}${filterUrl}`;
+}
