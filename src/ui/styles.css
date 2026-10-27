@@ -39,6 +39,12 @@ body {
     transition: transform 0.3s ease;
 }
 
+/* Placeholder for results without cover art (e.g. the genre/country
+   filter list) — a neutral gradient behind the film-stripe icon. */
+.poster-fallback {
+    background: linear-gradient(160deg, #2b2b33 0%, #1b1b20 55%, #121216 100%);
+}
+
 @media (hover: hover) {
     .poster-card:hover .poster-bg {
         transform: scale(1.05);

@@ -14,7 +14,10 @@ Pages:
   navigation) without a new request when returning from `SeriesDetailsPage`,
   including the scroll position in the grid (viewport anchor, see `anchorFor` in
   `grid-layout.js`); a reload intentionally starts fresh — the URL query is the
-  durable state
+  durable state. It also has a **filter mode** (toggle "Поиск / Фильтр" in the
+  header): genre + country dropdowns querying `/api/series-filter` with the URL
+  `?m=filter&g=<genre id>&c=<country>`, applied immediately on change; the
+  two modes keep separate in-memory listings and scroll anchors
 - `pages/HistoryPage.jsx` — the watch-history view: the same virtualized poster
   grid, but the tiles come from the IndexedDB watch-history store instead of a
   backend search. Sorted most-recently-watched first, filterable with the same
@@ -176,6 +179,8 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
     `padBadgeNumber`)
   - `src/ui/series-details.js` (poster/rating/label formatting)
   - `src/ui/search-state.js` (in-memory last-search store + restore/no-refetch decision)
+  - `src/ui/filter-state.js` (in-memory last-filter listing store + restore/no-refetch decision)
+  - `src/ui/filter-options.js` (genre/country option lists for the `/api/series-filter` UI + query building)
   - `src/ui/history-state.js` (in-memory last-history listing store + restore/no-refetch decision)
   - `src/ui/bookmarks.js` (IndexedDB bookmarks store: `loadBookmarks`/`saveBookmark`/`removeBookmark`/`isBookmarked`, `sortBookmarksByAdded`, `buildBookmarkTiles`)
   - `src/ui/bookmarks-state.js` (in-memory last-bookmarks listing store + restore/no-refetch decision)
@@ -190,7 +195,7 @@ component behaviour is covered by the production build and manual checks.
 
 | Route              | Page                | Backend API                 |
 | ------------------ | ------------------- | --------------------------- |
-| `/`                | SearchPage          | `/api/search?q=`            |
+| `/`                | SearchPage          | `/api/search?q=` / `/api/series-filter?filter_quotG=&filter_quotC=` |
 | `/history`         | HistoryPage         | none (IndexedDB watch history) |
 | `/bookmarks`       | BookmarksPage       | none (IndexedDB bookmarks)  |
 | `/series`          | PlayerPage          | `/api/series?url=`          |
@@ -215,6 +220,8 @@ src/ui/
 ├── bookmarks.js                 # IndexedDB bookmarks persistence
 ├── series-details.js           # series-details display helpers
 ├── search-state.js             # in-memory search state (back-nav restore)
+├── filter-state.js             # in-memory filter-results state (back-nav restore)
+├── filter-options.js           # genre/country option lists + filter query building
 ├── history-state.js            # in-memory history-listing state (back-nav restore)
 ├── bookmarks-state.js          # in-memory bookmarks-listing state (back-nav restore)
 ├── grid-layout.js              # virtualized-grid layout math

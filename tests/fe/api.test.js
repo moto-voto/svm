@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { searchSeries, fetchSeries, fetchSeriesDetails, clearApiCache } from '../../src/ui/api.js';
+import { searchSeries, fetchSeries, fetchSeriesDetails, filterSeries, clearApiCache } from '../../src/ui/api.js';
 import { installFetch } from './fetch-mock.js';
 
 test('searchSeries encodes the query and returns the array', async () => {
@@ -46,6 +46,68 @@ test('searchSeries rejects an unexpected (non-array) payload', async () => {
         await assert.rejects(() => searchSeries('x'), /Unexpected response from server/);
     } finally {
         fetchMock.restore();
+        clearApiCache();
+    }
+});
+
+test('filterSeries sends genre/country and returns the array', async () => {
+    const fetchMock = installFetch([
+        {
+            match: '/api/series-filter',
+            body: [{ id: '1', title: 'A', fullLink: 'x', image: null, description: null }],
+        },
+    ]);
+    try {
+        const results = await filterSeries('19', 'США');
+        assert.equal(results.length, 1);
+        assert.equal(results[0].title, 'A');
+        assert.equal(
+            fetchMock.calls[0].url,
+            '/api/series-filter?filter_quotG=19&filter_quotC=%D0%A1%D0%A8%D0%90'
+        );
+    } finally {
+        fetchMock.restore();
+        clearApiCache();
+    }
+});
+
+test('filterSeries omits all values (whole-catalog listing)', async () => {
+    const fetchMock = installFetch([{ match: '/api/series-filter', body: [] }]);
+    try {
+        const results = await filterSeries('all', 'all');
+        assert.deepEqual(results, []);
+        assert.equal(fetchMock.calls[0].url, '/api/series-filter');
+    } finally {
+        fetchMock.restore();
+        clearApiCache();
+    }
+});
+
+test('filterSeries sends only the non-all dimension', async () => {
+    const fetchMock = installFetch([{ match: '/api/series-filter', body: [] }]);
+    try {
+        await filterSeries('7', 'all');
+        assert.equal(fetchMock.calls[0].url, '/api/series-filter?filter_quotG=7');
+    } finally {
+        fetchMock.restore();
+        clearApiCache();
+    }
+});
+
+test('filterSeries surfaces server errors and rejects non-array payloads', async () => {
+    const bad = installFetch([{ match: '/api/series-filter', body: { error: 'nope' } }]);
+    try {
+        await assert.rejects(() => filterSeries('19', 'all'), /nope/);
+    } finally {
+        bad.restore();
+        clearApiCache();
+    }
+
+    const weird = installFetch([{ match: '/api/series-filter', body: { foo: 1 } }]);
+    try {
+        await assert.rejects(() => filterSeries('19', 'all'), /Unexpected response from server/);
+    } finally {
+        weird.restore();
         clearApiCache();
     }
 });

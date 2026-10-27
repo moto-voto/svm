@@ -162,9 +162,12 @@ export default function VirtualGrid(props) {
                             style={position(index)}
                         >
                             <div
-                                class="poster-bg"
-                                style={{ 'background-image': `url('${item().image ?? ''}')` }}
+                                class={`poster-bg${item().image ? '' : ' poster-fallback'}`}
+                                style={item().image ? { 'background-image': `url('${item().image}')` } : undefined}
                             />
+                            <Show when={!item().image}>
+                                <i class="fa-solid fa-clapperboard absolute inset-0 flex items-center justify-center text-3xl text-white/10 pointer-events-none"></i>
+                            </Show>
                             <Show when={topLeft()}>
                                 <span class="absolute top-1.5 left-1.5 z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-black/70 text-brand-orange border border-brand-orange/30">
                                     {topLeft()}

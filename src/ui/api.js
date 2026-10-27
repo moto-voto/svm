@@ -1,5 +1,6 @@
 import { withBase } from './utils.js';
 import { createCachedApi } from './api-cache.js';
+import { buildFilterApiQuery } from './filter-options.js';
 
 /** @import { SerialDescription } from '../parser/search.js' */
 /** @import { Series } from '../parser/series.js' */
@@ -34,6 +35,22 @@ let cachedApi = createCachedApi(fetchText);
  */
 export async function searchSeries(query) {
     const data = await cachedApi(withBase(`/api/search?q=${encodeURIComponent(query)}`));
+    if (!Array.isArray(data)) {
+        throw new Error('Unexpected response from server');
+    }
+    return data;
+}
+
+/**
+ * Fetch series filtered by genre and/or country (`/api/series-filter`). Pass
+ * the ALL_VALUE ('all') to leave either dimension unconstrained.
+ * @param {string} genre genre id ('all' when unset)
+ * @param {string} country country name ('all' when unset)
+ * @returns {Promise<SerialDescription[]>}
+ */
+export async function filterSeries(genre, country) {
+    const query = buildFilterApiQuery(genre, country);
+    const data = await cachedApi(withBase(`/api/series-filter${query}`));
     if (!Array.isArray(data)) {
         throw new Error('Unexpected response from server');
     }

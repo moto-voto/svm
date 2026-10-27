@@ -16,7 +16,6 @@ export function parseFilterResults(htmlContent, targetUrl) {
     // Filter results are wrapped in .letter elements with data-tabt
     $('.letter[data-tabt]').each((i, el) => {
         const letterDiv = $(el);
-        const letterChar = letterDiv.find('span').text().trim();
 
         const hiddenDiv = letterDiv.next();
         if (!hiddenDiv || !hiddenDiv.length) return;
@@ -29,11 +28,14 @@ export function parseFilterResults(htmlContent, targetUrl) {
             const link = $link.attr('href') || '';
             const title = $link.text().trim().replace(/\s+/g, ' ');
 
+            // Build image URL from ID
+            const imageUrl = `https://cdn.svstat.net/oblojka/${id}.jpg`;
+
             results.push({
                 id,
                 title,
                 fullLink: link.startsWith('http') ? link : new URL(link, targetUrl).href,
-                image: null,
+                image: imageUrl,
                 description: null
             });
         });

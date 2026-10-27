@@ -55,42 +55,20 @@ export async function apiSeriesFilter(params) {
     if (filter_quotC) {
         formData.append('filter[quotC][]', filter_quotC);
     }
-    if (filter_sortTo) {
-        formData.append('filter[sortTo]', filter_sortTo);
-    }
-    if (filter_engName) {
-        formData.append('filter[engName]', filter_engName);
-    }
-    if (filter_only) {
-        formData.append('filter[only]', filter_only);
-    }
-    if (filter_raiT) {
-        formData.append('filter[rait]', filter_raiT);
-    }
-    if (filter_hd) {
-        formData.append('filter[hd]', filter_hd);
-    }
-    if (filter_fhd) {
-        formData.append('filter[fhd]', filter_fhd);
-    }
-    if (filter_sub) {
-        formData.append('filter[sub]', filter_sub);
-    }
-    if (filter_block) {
-        formData.append('filter[block]', filter_block);
-    }
-    if (filter_history) {
-        formData.append('filter[history]', filter_history);
-    }
-    if (filter_mark) {
-        formData.append('filter[mark]', filter_mark);
-    }
-    if (filter_nw) {
-        formData.append('filter[nw]', filter_nw);
-    }
-    if (filter_exp) {
-        formData.append('filter[exp]', filter_exp);
-    }
+
+    formData.append('filter[sortTo]', filter_sortTo || 'name');
+    formData.append('filter[engName]', filter_engName || '');
+    formData.append('filter[only]', filter_only || '');
+    formData.append('filter[rait]', filter_raiT || 'kp');
+    formData.append('filter[hd]', filter_hd || '');
+    formData.append('filter[fhd]', filter_fhd || '');
+    formData.append('filter[sub]', filter_sub || '');
+    formData.append('filter[block]', filter_block || '');
+    formData.append('filter[history]', filter_history || '');
+    formData.append('filter[mark]', filter_mark || '');
+    formData.append('filter[nw]', filter_nw || '');
+    formData.append('filter[exp]', filter_exp || '');
+    formData.append('beforeSend', '');
 
     const searchUrl = `${TARGET}/index.php`;
     const response = await fetch(searchUrl, {
