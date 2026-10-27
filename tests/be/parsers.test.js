@@ -110,7 +110,7 @@ test('parseSeries loads translations/playlists', async () => {
         assert.equal(series.currentSeasonPlaylists.length, 2);
         assert.deepEqual(series.currentSeasonPlaylists[0], {
             translation: 'Дубляж',
-            plist: [{ title: 'Episode 1 - Pilot', file: 'https://example.com/e1.mp4' }],
+            plist: [{ title: 'Эпизод 1', file: 'https://example.com/e1.mp4' }],
         });
         assert.equal(series.currentSeasonPlaylists[1].translation, 'Субтитры');
         assert.equal(series.currentSeasonPlaylists[1].plist[0].file, 'https://example.com/f1.mp4');
@@ -130,7 +130,7 @@ test('parsePlaylistTranslations supports the pl[id] assignment form + fallback',
         assert.equal(translations.length, 1);
         assert.equal(translations[0].translation, 'Default');
         assert.deepEqual(translations[0].plist, [
-            { title: 'Only - One', file: 'https://example.com/only.mp4' },
+            { title: 'Эпизод 1', file: 'https://example.com/only.mp4' },
         ]);
     } finally {
         fetchMock.restore();
@@ -147,7 +147,7 @@ test('fetchPlaylist filters out non-http / undecodable entries', async () => {
 
         assert.equal(translations.length, 1);
         assert.deepEqual(translations[0].plist, [
-            { title: 'Good', file: 'https://example.com/good.mp4' },
+            { title: 'Эпизод 1', file: 'https://example.com/good.mp4' },
         ]);
     } finally {
         fetchMock.restore();
