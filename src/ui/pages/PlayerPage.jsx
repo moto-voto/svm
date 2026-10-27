@@ -746,11 +746,12 @@ export default function PlayerPage() {
                                 <i class="fa-solid fa-arrow-left text-xl sm:text-2xl"></i>
                             </A>
                             <div class="flex flex-col">
-                                <h1 class="text-sm sm:text-base font-semibold truncate max-w-[180px] sm:max-w-md text-gray-100">
-                                    {cleanEpisodeTitle(currentEpisode()?.title || '') || '—'}
+                                <h1 class="text-base sm:text-lg font-bold truncate max-w-[200px] sm:max-w-lg text-gray-100">
+                                    {titleParam || cleanTitle(currentSeason()?.title) || '—'}
                                 </h1>
-                                <span class="text-xs text-gray-400">
-                                    {cleanTitle(currentSeason()?.title)} • {currentTranslationName()}
+                                <span class="text-sm sm:text-base font-semibold text-gray-100">
+                                    S{String(selectedSeasonIndex() + 1).padStart(2, '0')} E{String(currentEpisodeIndex() + 1).padStart(2, '0')}
+                                    <span class="text-xs text-gray-400 font-normal"> • Перевод: {currentTranslationName()}</span>
                                 </span>
                             </div>
                         </div>

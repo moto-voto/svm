@@ -1,5 +1,6 @@
 import { load } from "cheerio";
 import { isTag, isText } from "domhandler";
+import { cleanSeriesTitle } from "../common.js";
 
 /**
  * @typedef SeriesDetails
@@ -34,7 +35,8 @@ export function parseSeriesDetails(html) {
     const id = idSeason || idSerial || '';
 
     // Title: h1.pgs-sinfo-title
-    const title = $('.pgs-sinfo-title').first().text().trim() || '';
+    let title = $('.pgs-sinfo-title').first().text().trim() || '';
+    title = cleanSeriesTitle(title);
 
     // fullLink: canonical link or og:url
     const fullLink = $('link[rel="canonical"]').attr('href') || $('meta[property="og:url"]').attr('content') || '';

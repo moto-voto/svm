@@ -9,11 +9,25 @@ export const HEADERS = {
 
 
 /**
- * 
- * @param {'log' | 'warn' | 'error'} level 
- * @param {string} message 
+ *
+ * @param {'log' | 'warn' | 'error'} level
+ * @param {string} message
  */
 export function log(level, message) {
     const timestamp = new Date().toISOString();
     console[level](`[${timestamp}] ${level.toUpperCase()}: ${message}`);
+}
+
+/**
+ * Clean series title by removing common prefixes and suffixes
+ * @param {string} title
+ * @returns {string}
+ */
+export function cleanSeriesTitle(title) {
+    if (!title) return title;
+    let cleaned = title;
+    cleaned = cleaned.replace(/^\s*Сериал\s+/i, '');
+    cleaned = cleaned.replace(/\s+\d+\s*сезон.*$/i, '').trim();
+    cleaned = cleaned.replace(/\s+онлайн.*$/i, '').trim();
+    return cleaned;
 }

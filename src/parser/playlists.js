@@ -103,10 +103,11 @@ export async function fetchPlaylist(plistUrl) {
 
     if (Array.isArray(playlistData)) {
         episodes = playlistData
-            .map(ep => {
+            .map((ep, index) => {
                 const decodedFile = decodeSeasonvarLink(ep.file);
+                const epTitle = `Эпизод ${index + 1}`;
                 return {
-                    title: ep.title.replace(/<br\s*\/?>/gi, ' - ').replace(/\s+/g, ' ').trim(),
+                    title: epTitle,
                     file: decodedFile
                 };
             })

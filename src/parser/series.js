@@ -1,5 +1,6 @@
 import { load } from "cheerio";
 import { parsePlaylistTranslations } from "./playlists.js"
+import { cleanSeriesTitle } from "../common.js"
 
 /** @import { PlaylistTranslation } from "./playlists.js" */
 
@@ -52,6 +53,7 @@ export async function parseSeries(htmlContent, targetUrl) {
         // Remove date and episode info (format: DD.MM.YYYY + series info)
         // Match date pattern and remove everything after it
         cleanTitle = cleanTitle.replace(/\d{1,2}\.\d{1,2}\.\d{4}\s+.+$/, '').trim();
+        cleanTitle = cleanSeriesTitle(cleanTitle);
 
         seasons.push({
             title: cleanTitle,
