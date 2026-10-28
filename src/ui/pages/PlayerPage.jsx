@@ -330,12 +330,12 @@ export default function PlayerPage() {
 
     function playPrevEpisode() {
         if (currentEpisodeIndex() > 0) loadEpisode(currentEpisodeIndex() - 1, true, 0);
-        else showOSD('fa-step-backward', 'First Episode');
+        else showOSD('fa-step-backward', 'Первый эпизод');
     }
 
     function playNextEpisode() {
         if (currentEpisodeIndex() < activePlaylist().length - 1) loadEpisode(currentEpisodeIndex() + 1, true, 0);
-        else showOSD('fa-step-forward', 'End of Playlist');
+        else showOSD('fa-step-forward', 'Конец списка');
     }
 
     function toggleFullscreen() {
@@ -377,7 +377,7 @@ export default function PlayerPage() {
         const target = seasons()[index];
         if (!target) return;
 
-        setLoader({ visible: true, title: `Loading ${cleanTitle(target.title)}...`, subtitle: 'Fetching playlist' });
+        setLoader({ visible: true, title: `Загрузка ${cleanTitle(target.title)}...`, subtitle: 'Получение плейлиста' });
         persistProgress(true);
         try {
             const series = await fetchSeries(target.link);
@@ -387,7 +387,7 @@ export default function PlayerPage() {
             setCurrentEpisodeIndex(0);
             await restoreSeasonProgress();
         } catch {
-            showOSD('fa-triangle-exclamation', 'Failed to load', 'Season');
+            showOSD('fa-triangle-exclamation', 'Не удалось загрузить', 'Сезон');
         } finally {
             setLoader((prev) => ({ ...prev, visible: false }));
         }
@@ -412,14 +412,14 @@ export default function PlayerPage() {
         setIsLocked(true);
         closePanels();
         setControlsVisible(false);
-        showOSD('fa-lock', 'Screen Locked');
+        showOSD('fa-lock', 'Экран заблокирован');
     }
 
     function unlockScreen() {
         setIsLocked(false);
         setControlsVisible(true);
         resetControlsTimer();
-        showOSD('fa-lock-open', 'Screen Unlocked');
+        showOSD('fa-lock-open', 'Экран разблокирован');
     }
 
     /**
@@ -669,7 +669,7 @@ export default function PlayerPage() {
             return;
         }
         try {
-            setLoader({ visible: true, title: 'Loading Series...', subtitle: 'Fetching playlist' });
+            setLoader({ visible: true, title: 'Загрузка серии...', subtitle: 'Получение плейлиста' });
             // The details page may pass the last played season so we can load
             // its episodes directly instead of the season the link opened on.
             let requestedUrl = seasonParam || seriesUrl;
@@ -693,6 +693,13 @@ export default function PlayerPage() {
         } finally {
             setLoader((prev) => ({ ...prev, visible: false }));
             resetControlsTimer();
+            try {
+                if (playerContainer && !document.fullscreenElement) {
+                    await playerContainer.requestFullscreen?.();
+                }
+            } catch {
+                // Ignore fullscreen errors (requires user gesture in some browsers).
+            }
         }
     });
 
@@ -779,8 +786,8 @@ export default function PlayerPage() {
                         <i class="fa-solid fa-play text-blue-400 text-xl"></i>
                     </div>
                     <div class="text-center">
-                        <p class="text-lg font-semibold text-white">{loader().title || 'Loading Season...'}</p>
-                        <p class="text-xs text-gray-400 mt-1">{loader().subtitle || 'Fetching episode list'}</p>
+                        <p class="text-lg font-semibold text-white">{loader().title || 'Загрузка сезона...'}</p>
+                        <p class="text-xs text-gray-400 mt-1">{loader().subtitle || 'Получение списка эпизодов'}</p>
                     </div>
                 </div>
 
@@ -871,8 +878,8 @@ export default function PlayerPage() {
                     <div class="flex-1 w-full min-h-0 flex flex-col justify-center pointer-events-none">
                         {/* Episodes Panel */}
                         <OverlayPanel
-                            title="Episodes"
-                            count={`${activePlaylist().length} available`}
+                            title="Эпизоды"
+                            count={`${activePlaylist().length}`}
                             open={activePanel() === 'episodes'}
                             onClose={closePanels}
                         >
@@ -882,7 +889,7 @@ export default function PlayerPage() {
                                         badge={`E${String(index() + 1).padStart(2, '0')}`}
                                         title={cleanEpisodeTitle(ep.title)}
                                         active={index() === currentEpisodeIndex()}
-                                        activeLabel="Playing"
+                                        activeLabel="Играет"
                                         activeIcon="fa-circle-play"
                                         idleIcon="fa-film"
                                         onClick={() => {
@@ -893,14 +900,14 @@ export default function PlayerPage() {
                                 )}
                             </For>
                             <Show when={activePlaylist().length === 0}>
-                                <div class="text-xs text-gray-400 py-4">No episodes found for this translation.</div>
+                                <div class="text-xs text-gray-400 py-4">Эпизоды не найдены.</div>
                             </Show>
                         </OverlayPanel>
 
                         {/* Translations Panel */}
                         <OverlayPanel
-                            title="Translations"
-                            count={`${translations().length} available`}
+                            title="Переводы"
+                            count={`${translations().length}`}
                             open={activePanel() === 'translations'}
                             onClose={closePanels}
                         >
@@ -921,7 +928,7 @@ export default function PlayerPage() {
                                         >
                                             <div class="flex items-center justify-between mb-2">
                                                 <i class={`fa-solid ${active() ? 'fa-circle-check text-blue-400' : 'fa-language text-gray-400'}`}></i>
-                                                <span class="text-[10px] text-gray-400">{trans.plist.length} eps</span>
+                                                <span class="text-[10px] text-gray-400">{trans.plist.length} эп.</span>
                                             </div>
                                             <p class="text-xs font-semibold truncate text-gray-100">{trans.translation}</p>
                                         </div>
@@ -929,14 +936,14 @@ export default function PlayerPage() {
                                 }}
                             </For>
                             <Show when={translations().length === 0}>
-                                <div class="text-xs text-gray-400 py-4">No translations found.</div>
+                                <div class="text-xs text-gray-400 py-4">Переводы не найдены.</div>
                             </Show>
                         </OverlayPanel>
 
                         {/* Seasons Panel */}
                         <OverlayPanel
-                            title="Seasons"
-                            count={`${seasons().length} seasons`}
+                            title="Сезоны"
+                            count={`${seasons().length}`}
                             open={activePanel() === 'seasons'}
                             onClose={closePanels}
                         >
@@ -946,7 +953,7 @@ export default function PlayerPage() {
                                         badge={`S${String(index() + 1).padStart(2, '0')}`}
                                         title={cleanTitle(season.title)}
                                         active={index() === selectedSeasonIndex()}
-                                        activeLabel="Now"
+                                        activeLabel="Сейчас"
                                         activeIcon="fa-circle-play"
                                         idleIcon="fa-layer-group"
                                         onClick={() => {
@@ -957,7 +964,7 @@ export default function PlayerPage() {
                                 )}
                             </For>
                             <Show when={seasons().length === 0}>
-                                <div class="text-xs text-gray-400 py-4">No seasons found.</div>
+                                <div class="text-xs text-gray-400 py-4">Сезоны не найдены.</div>
                             </Show>
                         </OverlayPanel>
                     </div>
