@@ -103,40 +103,22 @@ test('volume is clamped to [0, 1]', () => {
     assert.equal(high.value, 1);
 });
 
-test('a long horizontal drag seeks and snapshots the start time', () => {
+test('a long horizontal drag no longer seeks (horizontal scroll removed)', () => {
     const result = resolveGesture(
         resetGestureState(),
         input({ side: 'left', currentX: 50, currentY: 0, width: 100, currentTime: 30, duration: 100 })
     );
 
-    assert.equal(result.type, GESTURE_TYPES.SEEK);
-    assert.equal(result.delta, 45); // (50 / 100) * 90
-    assert.equal(result.time, 75); // 30 + 45
-    assert.deepEqual(result.state, { horizontal: true, seekStart: 30 });
+    assert.equal(result.type, GESTURE_TYPES.IGNORE);
 });
 
-test('once horizontal, the gesture stays a seek even if the drag turns vertical', () => {
+test('horizontal gesture is ignored even if state marked horizontal', () => {
     const state = { horizontal: true, seekStart: 30 };
     const result = resolveGesture(
         state,
-        input({ side: 'left', currentX: 5, currentY: -100, width: 100, duration: 100 })
+        input({ side: 'left', currentX: 50, currentY: 5, width: 100, duration: 100 })
     );
-    assert.equal(result.type, GESTURE_TYPES.SEEK);
-    assert.equal(result.state, state);
-});
-
-test('seek target is clamped to [0, duration]', () => {
-    const back = resolveGesture(
-        { horizontal: true, seekStart: 10 },
-        input({ currentX: -50, width: 100, duration: 100 })
-    );
-    assert.equal(back.time, 0);
-
-    const forward = resolveGesture(
-        { horizontal: true, seekStart: 95 },
-        input({ currentX: 50, width: 100, duration: 100 })
-    );
-    assert.equal(forward.time, 100);
+    assert.equal(result.type, GESTURE_TYPES.IGNORE);
 });
 
 test('seekDelta scales with width', () => {

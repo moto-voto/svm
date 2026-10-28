@@ -81,6 +81,10 @@ export default function PlayerPage() {
     let controlsTimeout;
     /** @type {ReturnType<typeof setTimeout> | undefined} */
     let osdTimeout;
+    let lastTapTime = 0;
+    let lastTapSide = /** @type {'left' | 'right' | null} */ (null);
+    let seekAccum = 0;
+    let seekAccumSide = /** @type {'left' | 'right' | null} */ (null);
 
     const seasons = () => payload()?.seasons || [];
     const translations = () => payload()?.currentSeasonPlaylists || [];
@@ -114,7 +118,18 @@ export default function PlayerPage() {
     function showOSD(icon, text, subtext = '') {
         setOsd({ visible: true, icon, text, subtext });
         clearTimeout(osdTimeout);
-        osdTimeout = setTimeout(() => setOsd((prev) => ({ ...prev, visible: false })), 1200);
+        osdTimeout = setTimeout(() => {
+            setOsd((prev) => ({ ...prev, visible: false }));
+            seekAccum = 0;
+            seekAccumSide = null;
+        }, 1200);
+    }
+
+    function hideOSD() {
+        clearTimeout(osdTimeout);
+        setOsd((prev) => ({ ...prev, visible: false }));
+        seekAccum = 0;
+        seekAccumSide = null;
     }
 
     function resetControlsTimer() {
@@ -407,7 +422,54 @@ export default function PlayerPage() {
         showOSD('fa-lock-open', 'Screen Unlocked');
     }
 
-    function onGestureClick() {
+    /**
+     * @param {'left' | 'right' | null} [side]
+     */
+    function onGestureClick(side = null) {
+        if (isLocked()) return;
+        const now = Date.now();
+        const tapSide = /** @type {'left' | 'right' | null} */ (side);
+        if (tapSide && lastTapSide === tapSide && now - lastTapTime < 400) {
+            if (!video) {
+                lastTapTime = now;
+                lastTapSide = tapSide;
+                if (osd().visible) hideOSD();
+                return;
+            }
+            if (tapSide === 'left') {
+                if (seekAccumSide !== 'left') {
+                    seekAccum = 0;
+                    seekAccumSide = 'left';
+                }
+                seekAccum -= SEEK_STEP_SECONDS;
+                video.currentTime = Math.max(0, video.currentTime - SEEK_STEP_SECONDS);
+                showOSD('fa-backward', `${seekAccum}s`);
+                resetControlsTimer();
+            } else if (tapSide === 'right') {
+                if (seekAccumSide !== 'right') {
+                    seekAccum = 0;
+                    seekAccumSide = 'right';
+                }
+                seekAccum += SEEK_STEP_SECONDS;
+                video.currentTime = Math.min(video.duration || 0, video.currentTime + SEEK_STEP_SECONDS);
+                showOSD('fa-forward', `+${seekAccum}s`);
+                resetControlsTimer();
+            }
+            lastTapTime = now;
+            lastTapSide = tapSide;
+            return;
+        }
+        if (osd().visible && !(tapSide && lastTapSide === tapSide)) {
+            hideOSD();
+            lastTapTime = now;
+            lastTapSide = tapSide;
+            return;
+        }
+        if (osd().visible && tapSide && lastTapSide === tapSide && now - lastTapTime >= 400) {
+            hideOSD();
+        }
+        lastTapTime = now;
+        lastTapSide = tapSide;
         const action = resolveTapAction({
             panelOpen: Boolean(activePanel()),
             locked: isLocked(),
@@ -502,8 +564,13 @@ export default function PlayerPage() {
         let startVal = 0;
         let swiping = false;
         let gestureState = resetGestureState();
+        // Mobile browsers dispatch a synthetic `mousemove` before `click`; this
+        // timestamp lets the mouse handler ignore those compatibility events so
+        // they don't pre-show the controls and turn a reveal tap into a hide.
+        let lastTouchAt = 0;
 
         const onTouchStart = (/** @type {TouchEvent} */ event) => {
+            lastTouchAt = Date.now();
             if (isLocked() || !playerContainer) return;
             // When a panel is open (or the touch starts inside a horizontally
             // scrollable panel), let the panel handle the gesture instead of
@@ -564,6 +631,11 @@ export default function PlayerPage() {
             activeSide = null;
         };
 
+        const onMouseMove = () => {
+            if (Date.now() - lastTouchAt < 500) return;
+            resetControlsTimer();
+        };
+
         document.addEventListener('keydown', onKeyDown);
         document.addEventListener('pointerdown', unlockAudio);
         document.addEventListener('keydown', unlockAudio);
@@ -573,7 +645,7 @@ export default function PlayerPage() {
         playerContainer?.addEventListener('touchstart', onTouchStart, { passive: true });
         playerContainer?.addEventListener('touchmove', onTouchMove, { passive: true });
         playerContainer?.addEventListener('touchend', onTouchEnd);
-        playerContainer?.addEventListener('mousemove', resetControlsTimer);
+        playerContainer?.addEventListener('mousemove', onMouseMove);
 
         onCleanup(() => {
             document.removeEventListener('keydown', onKeyDown);
@@ -586,7 +658,7 @@ export default function PlayerPage() {
             playerContainer?.removeEventListener('touchstart', onTouchStart);
             playerContainer?.removeEventListener('touchmove', onTouchMove);
             playerContainer?.removeEventListener('touchend', onTouchEnd);
-            playerContainer?.removeEventListener('mousemove', resetControlsTimer);
+            playerContainer?.removeEventListener('mousemove', onMouseMove);
             clearTimeout(controlsTimeout);
             clearTimeout(osdTimeout);
         });
@@ -659,10 +731,11 @@ export default function PlayerPage() {
                 />
 
                 {/* Gesture Layer */}
-                <div class="absolute inset-0 z-20 flex" onClick={onGestureClick}>
-                    <div class="w-1/2 h-full cursor-pointer" />
-                    <div class="w-1/2 h-full cursor-pointer" />
+                <div class="absolute inset-0 z-20 flex">
+                    <div class="w-1/2 h-full cursor-pointer" onClick={() => onGestureClick('left')} />
+                    <div class="w-1/2 h-full cursor-pointer" onClick={() => onGestureClick('right')} />
                 </div>
+
 
                 {/* Autoplay policy fallback: muted playback + tap to enable sound */}
                 <Show when={needsUnmute()}>
@@ -735,6 +808,16 @@ export default function PlayerPage() {
                 <div
                     class="control-fade absolute inset-0 z-30 flex flex-col justify-between bg-gradient-to-b from-black/80 via-transparent to-black/90 p-4 sm:p-6"
                     classList={{ 'opacity-0 pointer-events-none': !controlsVisible() || isLocked() }}
+                    onClick={(e) => {
+                        const target = e.target;
+                        if (target instanceof Element && (target.closest('button') || target.closest('a') || target.closest('input'))) {
+                            return;
+                        }
+                        const rect = playerContainer?.getBoundingClientRect();
+                        let side = /** @type {'left' | 'right' | null} */ (null);
+                        if (rect) side = e.clientX - rect.left < rect.width / 2 ? 'left' : 'right';
+                        onGestureClick(side);
+                    }}
                 >
                     {/* Top Navigation Bar */}
                     <div class="flex items-center justify-between w-full">
@@ -742,6 +825,7 @@ export default function PlayerPage() {
                             <A
                                 href={`/series-details?url=${encodeURIComponent(seriesUrl)}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ''}`}
                                 class="text-white hover:text-blue-400 p-2 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
                             >
                                 <i class="fa-solid fa-arrow-left text-xl sm:text-2xl"></i>
                             </A>
@@ -830,7 +914,10 @@ export default function PlayerPage() {
                                                 'bg-blue-600/30 border-blue-500/60 text-white': active(),
                                                 'bg-black/30 border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/20': !active(),
                                             }}
-                                            onClick={() => selectTranslation(index())}
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                selectTranslation(index());
+                                            }}
                                         >
                                             <div class="flex items-center justify-between mb-2">
                                                 <i class={`fa-solid ${active() ? 'fa-circle-check text-blue-400' : 'fa-language text-gray-400'}`}></i>
@@ -904,13 +991,13 @@ export default function PlayerPage() {
                                 type="button"
                                 class="text-gray-300 hover:text-white p-2 transition-colors"
                                 title="Lock Controls"
-                                onClick={lockScreen}
+                                onClick={(e) => { e.stopPropagation(); lockScreen(); }}
                             >
                                 <i class="fa-solid fa-lock-open text-lg sm:text-xl"></i>
                             </button>
 
                             <div class="flex items-center space-x-6 sm:space-x-10">
-                                <button type="button" class="text-gray-200 hover:text-blue-400 p-2 transition-colors" title="Previous Episode" onClick={playPrevEpisode}>
+                                <button type="button" class="text-gray-200 hover:text-blue-400 p-2 transition-colors" title="Previous Episode" onClick={(e) => { e.stopPropagation(); playPrevEpisode(); }}>
                                     <i class="fa-solid fa-step-backward text-xl sm:text-2xl"></i>
                                 </button>
 
@@ -918,12 +1005,12 @@ export default function PlayerPage() {
                                     type="button"
                                     class="text-white hover:text-blue-400 p-3 transition-colors transform active:scale-95"
                                     title="Play / Pause"
-                                    onClick={togglePlayPause}
+                                    onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}
                                 >
                                     <i class={`fa-solid ${isPlaying() ? 'fa-pause' : 'fa-play'} text-2xl sm:text-3xl`}></i>
                                 </button>
 
-                                <button type="button" class="text-gray-200 hover:text-blue-400 p-2 transition-colors" title="Next Episode" onClick={playNextEpisode}>
+                                <button type="button" class="text-gray-200 hover:text-blue-400 p-2 transition-colors" title="Next Episode" onClick={(e) => { e.stopPropagation(); playNextEpisode(); }}>
                                     <i class="fa-solid fa-step-forward text-xl sm:text-2xl"></i>
                                 </button>
                             </div>
@@ -944,7 +1031,7 @@ export default function PlayerPage() {
                                     type="button"
                                     class="text-gray-300 hover:text-white p-2 transition-colors"
                                     title="Toggle Fullscreen"
-                                    onClick={toggleFullscreen}
+                                    onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
                                 >
                                     <i class={`fa-solid ${isFullscreen() ? 'fa-compress' : 'fa-expand'} text-lg sm:text-xl`}></i>
                                 </button>

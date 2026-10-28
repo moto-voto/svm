@@ -112,20 +112,9 @@ export function resolveGesture(state, input) {
     const deltaX = input.currentX - input.startX;
     const deltaY = input.startY - input.currentY;
 
-    let nextState = state;
-    if (!state.horizontal && isHorizontalGesture(deltaX, deltaY)) {
-        // Base the seek on the playback position when the drag turned horizontal.
-        nextState = { horizontal: true, seekStart: input.currentTime || 0 };
-    }
-
-    if (nextState.horizontal) {
-        const delta = seekDelta(deltaX, input.width);
-        return {
-            state: nextState,
-            type: GESTURE_TYPES.SEEK,
-            time: clamp(nextState.seekStart + delta, 0, input.duration || 0),
-            delta,
-        };
+    // Horizontal scrolling no longer triggers seeking.
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SEEK_THRESHOLD_PX) {
+        return { state, type: GESTURE_TYPES.IGNORE };
     }
 
     if (input.side === 'left') {

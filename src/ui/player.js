@@ -75,7 +75,7 @@ export function brightnessOverlayColor(brightness) {
 }
 
 /** Seconds skipped by the arrow-left / arrow-right shortcuts. */
-export const SEEK_STEP_SECONDS = 5;
+export const SEEK_STEP_SECONDS = 10;
 
 /** Volume change for the arrow-up / arrow-down shortcuts. */
 export const VOLUME_STEP = 0.1;

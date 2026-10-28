@@ -24,7 +24,13 @@ import { Show } from 'solid-js';
  */
 export default function ThumbCard(props) {
     return (
-        <div class="flex-shrink-0 w-40 sm:w-52 cursor-pointer group" onClick={props.onClick}>
+        <div
+            class="flex-shrink-0 w-40 sm:w-52 cursor-pointer group"
+            onClick={(event) => {
+                event.stopPropagation();
+                props.onClick();
+            }}
+        >
             <div
                 class="relative h-24 sm:h-28 rounded-xl overflow-hidden border transition-all flex items-center justify-center"
                 classList={{

@@ -118,6 +118,6 @@ test('resolveKeyAction maps shortcuts (case-insensitive)', () => {
 });
 
 test('keyboard step constants are sane', () => {
-    assert.equal(SEEK_STEP_SECONDS, 5);
+    assert.equal(SEEK_STEP_SECONDS, 10);
     assert.equal(VOLUME_STEP, 0.1);
 });
