@@ -19,7 +19,7 @@ export default function OverlayPanel(props) {
             <div class="flex items-center justify-between mb-2 px-1">
                 <h3 class="text-xs sm:text-sm font-bold uppercase tracking-widest text-gray-300 drop-shadow">{props.title}</h3>
                 <div class="flex items-center space-x-2">
-                    <span class="text-xs text-blue-400 font-semibold">{props.count}</span>
+                    <span class="text-xs text-brand-orange font-semibold">{props.count}</span>
                     <button type="button" class="text-gray-400 hover:text-white p-2 transition-colors" title="Close" onClick={props.onClose}>
                         <i class="fa-solid fa-xmark"></i>
                     </button>

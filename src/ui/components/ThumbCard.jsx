@@ -34,25 +34,25 @@ export default function ThumbCard(props) {
             <div
                 class="relative h-24 sm:h-28 rounded-xl overflow-hidden border transition-all flex items-center justify-center"
                 classList={{
-                    'border-blue-500/70 bg-blue-600/25': props.active,
+                    'border-brand-orange/70 bg-brand-orange/25': props.active,
                     'border-white/10 bg-black/30 group-hover:bg-white/10 group-hover:border-white/25': !props.active,
                 }}
             >
                 <i
-                    class={`fa-solid ${props.active ? props.activeIcon : props.idleIcon} ${props.active ? 'text-blue-400' : 'text-gray-400'} text-3xl`}
+                    class={`fa-solid ${props.active ? props.activeIcon : props.idleIcon} ${props.active ? 'text-brand-orange' : 'text-gray-400'} text-3xl`}
                 ></i>
                 <span class="absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-gray-200">
                     {props.badge}
                 </span>
                 <Show when={props.active}>
-                    <span class="absolute bottom-1 right-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-600 text-white">
+                    <span class="absolute bottom-1 right-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-brand-orange text-black">
                         {props.activeLabel}
                     </span>
                 </Show>
             </div>
             <p
                 class="text-xs font-semibold truncate mt-1.5"
-                classList={{ 'text-blue-300': props.active, 'text-gray-200': !props.active }}
+                classList={{ 'text-brand-orange': props.active, 'text-gray-200': !props.active }}
             >
                 {props.title}
             </p>

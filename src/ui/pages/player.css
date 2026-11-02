@@ -62,10 +62,11 @@ input[type=range].mx-progress::-moz-range-thumb {
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-/* Center OSD Icon Animations */
+/* Center OSD box. Avoid `backdrop-filter` here: on Android it promotes the
+   video to a separate compositing layer and some GPUs render it at a different
+   scale, making the video visibly stretch while the indicator is on screen. */
 .osd-box {
-    backdrop-filter: blur(8px);
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.15);
 }
 

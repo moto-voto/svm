@@ -98,42 +98,41 @@ export default function SeriesDetailsPage() {
             <div>
                 <Header
                     maxWidth="max-w-4xl"
-                    topRight={
+                >
+                    {/* Back to list + favorites + primary watch action, pinned while scrolling */}
+                    <div class="flex items-center justify-between gap-2 sm:gap-3">
+                        <A
+                            href={resolveBackHref(fromParam)}
+                            noScroll
+                            class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-3 sm:px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
+                        >
+                            <i class="fa-solid fa-arrow-left text-brand-orange"></i>
+                            <span>Назад</span>
+                        </A>
+
                         <Show when={details()}>
                             <button
                                 type="button"
                                 onClick={toggleBookmark}
                                 disabled={bookmarkBusy()}
                                 title={bookmarked() ? 'Убрать из закладок' : 'Добавить в закладки'}
-                                class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap disabled:opacity-60"
+                                class="inline-flex items-center justify-center gap-1.5 text-sm font-semibold px-3 sm:px-4 py-2.5 rounded-lg border transition-colors whitespace-nowrap disabled:opacity-60 shrink-0"
                                 classList={{
-                                    'bg-brand-orange/15 text-brand-orange border-brand-orange/40': bookmarked(),
-                                    'bg-[#222226] text-gray-300 border-neutral-700/60 hover:bg-[#2c2c32] hover:text-white': !bookmarked(),
+                                    'bg-brand-orange text-black border-brand-orange hover:bg-brand-orangeDark': bookmarked(),
+                                    'bg-[#222226] text-gray-300 border-brand-cardBorder hover:bg-[#2c2c32] hover:text-white': !bookmarked(),
                                 }}
                             >
-                                <i class={`fa-solid ${bookmarked() ? 'fa-bookmark' : 'fa-bookmark-regular'} text-xs sm:text-sm`}></i>
+                                <i class={`fa-solid ${bookmarked() ? 'fa-bookmark' : 'fa-bookmark-regular'} hidden sm:inline`}></i>
                                 <span>{bookmarked() ? 'В закладках' : 'В закладки'}</span>
                             </button>
                         </Show>
-                    }
-                >
-                    {/* Back to list + primary watch action, pinned while scrolling */}
-                    <div class="flex items-center justify-between gap-3">
-                        <A
-                            href={resolveBackHref(fromParam)}
-                            noScroll
-                            class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
-                        >
-                            <i class="fa-solid fa-arrow-left text-brand-orange"></i>
-                            <span>Назад к списку</span>
-                        </A>
 
                         <Show
                             when={details()?.fullLink}
                             fallback={
-                                <span class="inline-flex items-center gap-2 bg-brand-orange/50 text-black/60 font-bold text-sm py-2.5 px-4 rounded-lg cursor-not-allowed shrink-0">
-                                    <i class="fa-solid fa-play text-black/60 text-sm"></i>
-                                    <span>Смотреть онлайн</span>
+                                <span class="inline-flex items-center gap-2 bg-[#222226] text-gray-300 font-semibold text-sm py-2.5 px-3 sm:px-4 rounded-lg border border-brand-cardBorder cursor-not-allowed shrink-0">
+                                    <i class="fa-solid fa-play text-brand-orange text-sm"></i>
+                                    <span>Смотреть</span>
                                 </span>
                             }
                         >
@@ -145,11 +144,10 @@ export default function SeriesDetailsPage() {
                                     normalizeImageUrl(details()?.image || ''),
                                     fromParam
                                 )}
-                                class="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeDark text-black font-bold text-sm py-2.5 px-4 rounded-lg shadow-lg transition-all duration-200 active:scale-95 shrink-0"
+                                class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-3 sm:px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
                             >
-                                <i class="fa-solid fa-play text-black text-sm"></i>
-                                <span>Смотреть онлайн</span>
-                                <i class="fa-solid fa-chevron-right text-xs opacity-75 ml-1"></i>
+                                <i class="fa-solid fa-play text-brand-orange text-sm"></i>
+                                <span>Смотреть</span>
                             </A>
                         </Show>
                     </div>

@@ -594,6 +594,10 @@ export default function PlayerPage() {
 
         const onTouchMove = (/** @type {TouchEvent} */ event) => {
             if (!swiping || isLocked() || activePanel() || !video || !playerContainer) return;
+            // Keep the vertical swipe from scrolling the page / toggling the
+            // browser toolbar, which would change the viewport height and
+            // visibly resize the video while the brightness/volume OSD shows.
+            event.preventDefault();
             const touch = event.touches[0];
 
             const result = resolveGesture(gestureState, {
@@ -643,7 +647,7 @@ export default function PlayerPage() {
         document.addEventListener('visibilitychange', onVisibilityChange);
         window.addEventListener('pagehide', onPageHide);
         playerContainer?.addEventListener('touchstart', onTouchStart, { passive: true });
-        playerContainer?.addEventListener('touchmove', onTouchMove, { passive: true });
+        playerContainer?.addEventListener('touchmove', onTouchMove, { passive: false });
         playerContainer?.addEventListener('touchend', onTouchEnd);
         playerContainer?.addEventListener('mousemove', onMouseMove);
 
@@ -712,7 +716,7 @@ export default function PlayerPage() {
                 {/* HTML5 Video Element */}
                 <video
                     ref={video}
-                    class="w-full h-full object-contain"
+                    class="absolute inset-0 w-full h-full object-contain"
                     playsinline
                     preload="auto"
                     onTimeUpdate={onTimeUpdate}
@@ -738,7 +742,7 @@ export default function PlayerPage() {
                 />
 
                 {/* Gesture Layer */}
-                <div class="absolute inset-0 z-20 flex">
+                <div class="absolute inset-0 z-20 flex touch-none">
                     <div class="w-1/2 h-full cursor-pointer" onClick={() => onGestureClick('left')} />
                     <div class="w-1/2 h-full cursor-pointer" onClick={() => onGestureClick('right')} />
                 </div>
@@ -754,7 +758,7 @@ export default function PlayerPage() {
                         }}
                         class="absolute left-1/2 -translate-x-1/2 top-16 z-40 flex items-center gap-2 bg-black/75 hover:bg-black/90 text-white text-xs font-semibold px-3.5 py-2 rounded-full border border-white/20 shadow-lg backdrop-blur-sm"
                     >
-                        <i class="fa-solid fa-volume-xmark text-blue-400"></i>
+                        <i class="fa-solid fa-volume-xmark text-brand-orange"></i>
                         <span>Включить звук</span>
                     </button>
                 </Show>
@@ -782,8 +786,8 @@ export default function PlayerPage() {
                     classList={{ 'opacity-0 pointer-events-none': !loader().visible }}
                 >
                     <div class="relative w-16 h-16 flex items-center justify-center">
-                        <div class="absolute w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-                        <i class="fa-solid fa-play text-blue-400 text-xl"></i>
+                        <div class="absolute w-16 h-16 border-4 border-brand-orange/20 border-t-brand-orange rounded-full animate-spin"></div>
+                        <i class="fa-solid fa-play text-brand-orange text-xl"></i>
                     </div>
                     <div class="text-center">
                         <p class="text-lg font-semibold text-white">{loader().title || 'Загрузка сезона...'}</p>
@@ -796,7 +800,7 @@ export default function PlayerPage() {
                     <div class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center gap-4 text-center p-6">
                         <i class="fa-solid fa-triangle-exclamation text-4xl text-red-400"></i>
                         <p class="text-sm text-gray-200">{error()}</p>
-                        <A href="/" noScroll class="text-blue-400 hover:text-blue-300 text-sm font-semibold">← Назад к поиску</A>
+                        <A href="/" noScroll class="text-brand-orange hover:text-brand-orange/80 text-sm font-semibold">← Назад к поиску</A>
                     </div>
                 </Show>
 
@@ -807,7 +811,7 @@ export default function PlayerPage() {
                         onClick={unlockScreen}
                         class="absolute left-6 top-1/2 -translate-y-1/2 z-50 bg-black/60 hover:bg-black/80 text-white p-4 rounded-full border border-white/20 shadow-lg"
                     >
-                        <i class="fa-solid fa-lock text-xl text-blue-400"></i>
+                        <i class="fa-solid fa-lock text-xl text-brand-orange"></i>
                     </button>
                 </Show>
 
@@ -831,7 +835,7 @@ export default function PlayerPage() {
                         <div class="flex items-center space-x-4">
                             <A
                                 href={`/series-details?url=${encodeURIComponent(seriesUrl)}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ''}`}
-                                class="text-white hover:text-blue-400 p-2 transition-colors"
+                                class="text-white hover:text-brand-orange p-2 transition-colors"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <i class="fa-solid fa-arrow-left text-xl sm:text-2xl"></i>
@@ -850,7 +854,7 @@ export default function PlayerPage() {
                         <div class="flex items-center space-x-3 sm:space-x-4 text-sm sm:text-base">
                             <button
                                 type="button"
-                                class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors"
+                                class="hover:text-brand-orange text-gray-200 p-1.5 transition-colors"
                                 title="Seasons"
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -862,7 +866,7 @@ export default function PlayerPage() {
 
                             <button
                                 type="button"
-                                class="hover:text-blue-400 text-gray-200 p-1.5 transition-colors"
+                                class="hover:text-brand-orange text-gray-200 p-1.5 transition-colors"
                                 title="Translations"
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -918,7 +922,7 @@ export default function PlayerPage() {
                                         <div
                                             class="flex-shrink-0 w-36 sm:w-44 p-3 rounded-xl border transition-all cursor-pointer backdrop-blur-sm"
                                             classList={{
-                                                'bg-blue-600/30 border-blue-500/60 text-white': active(),
+                                                'bg-brand-orange/30 border-brand-orange/60 text-white': active(),
                                                 'bg-black/30 border-white/10 text-gray-200 hover:bg-white/10 hover:border-white/20': !active(),
                                             }}
                                             onClick={(event) => {
@@ -927,7 +931,7 @@ export default function PlayerPage() {
                                             }}
                                         >
                                             <div class="flex items-center justify-between mb-2">
-                                                <i class={`fa-solid ${active() ? 'fa-circle-check text-blue-400' : 'fa-language text-gray-400'}`}></i>
+                                                <i class={`fa-solid ${active() ? 'fa-circle-check text-brand-orange' : 'fa-language text-gray-400'}`}></i>
                                                 <span class="text-[10px] text-gray-400">{trans.plist.length} эп.</span>
                                             </div>
                                             <p class="text-xs font-semibold truncate text-gray-100">{trans.translation}</p>
@@ -976,7 +980,7 @@ export default function PlayerPage() {
                             <span class="w-12 text-right">{formatTime(currentTime())}</span>
                             <div class="relative flex-1 flex items-center">
                                 <div
-                                    class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-500 rounded-l pointer-events-none z-0"
+                                    class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-brand-orange rounded-l pointer-events-none z-0"
                                     style={{ width: `${progressPct()}%` }}
                                 />
                                 <input
@@ -1004,28 +1008,28 @@ export default function PlayerPage() {
                             </button>
 
                             <div class="flex items-center space-x-6 sm:space-x-10">
-                                <button type="button" class="text-gray-200 hover:text-blue-400 p-2 transition-colors" title="Previous Episode" onClick={(e) => { e.stopPropagation(); playPrevEpisode(); }}>
-                                    <i class="fa-solid fa-step-backward text-xl sm:text-2xl"></i>
+                                <button type="button" class="text-gray-200 hover:text-brand-orange p-2 transition-colors w-9 sm:w-10 flex items-center justify-center" title="Previous Episode" onClick={(e) => { e.stopPropagation(); playPrevEpisode(); }}>
+                                    <i class="fa-solid fa-step-backward text-xl sm:text-2xl fa-fw"></i>
                                 </button>
 
                                 <button
                                     type="button"
-                                    class="text-white hover:text-blue-400 p-3 transition-colors transform active:scale-95"
+                                    class="text-white hover:text-brand-orange p-3 transition-colors transform active:scale-95 w-12 sm:w-14 flex items-center justify-center"
                                     title="Play / Pause"
                                     onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}
                                 >
-                                    <i class={`fa-solid ${isPlaying() ? 'fa-pause' : 'fa-play'} text-2xl sm:text-3xl`}></i>
+                                    <i class={`fa-solid ${isPlaying() ? 'fa-pause' : 'fa-play'} text-2xl sm:text-3xl fa-fw`}></i>
                                 </button>
 
-                                <button type="button" class="text-gray-200 hover:text-blue-400 p-2 transition-colors" title="Next Episode" onClick={(e) => { e.stopPropagation(); playNextEpisode(); }}>
-                                    <i class="fa-solid fa-step-forward text-xl sm:text-2xl"></i>
+                                <button type="button" class="text-gray-200 hover:text-brand-orange p-2 transition-colors w-9 sm:w-10 flex items-center justify-center" title="Next Episode" onClick={(e) => { e.stopPropagation(); playNextEpisode(); }}>
+                                    <i class="fa-solid fa-step-forward text-xl sm:text-2xl fa-fw"></i>
                                 </button>
                             </div>
 
                             <div class="flex items-center space-x-3">
                                 <button
                                     type="button"
-                                    class="text-gray-300 hover:text-blue-400 p-2 transition-colors relative"
+                                    class="text-gray-300 hover:text-brand-orange p-2 transition-colors relative"
                                     title="Episodes"
                                     onClick={(e) => {
                                         e.stopPropagation();
