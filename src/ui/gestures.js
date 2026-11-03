@@ -15,6 +15,9 @@ export const SEEK_THRESHOLD_PX = 20;
 /** Seconds spanned by a full-width horizontal drag. */
 export const SEEK_RANGE_SECONDS = 90;
 
+/** OSD icon shared by the double-tap skip and the horizontal seek-drag badge. */
+export const SEEK_TYPE_BADGE_ICON = 'fa-arrow-right-arrow-left';
+
 /** Vertical drag sensitivity (value change per pixel). */
 export const DRAG_SENSITIVITY = 0.005;
 
@@ -112,9 +115,20 @@ export function resolveGesture(state, input) {
     const deltaX = input.currentX - input.startX;
     const deltaY = input.startY - input.currentY;
 
-    // Horizontal scrolling no longer triggers seeking.
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SEEK_THRESHOLD_PX) {
-        return { state, type: GESTURE_TYPES.IGNORE };
+    // A sideways drag beyond the threshold is a seek, on either side: the drag
+    // is absolute (relative to where the gesture started), so it can scrub
+    // backwards as well as forwards. Vertical drags keep their per-side
+    // meaning (left = brightness, right = volume).
+    if (isHorizontalGesture(deltaX, deltaY)) {
+        // The seek base time is frozen on the first qualifying move so the
+        // position tracks the finger exactly instead of accumulating.
+        const seekStart = state.horizontal ? state.seekStart : input.currentTime;
+        return {
+            state: { horizontal: true, seekStart },
+            type: GESTURE_TYPES.SEEK,
+            time: clamp(seekStart + seekDelta(deltaX, input.width), 0, Math.max(0, input.duration)),
+            delta: seekDelta(deltaX, input.width),
+        };
     }
 
     if (input.side === 'left') {

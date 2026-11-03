@@ -2,7 +2,7 @@ import { createSignal, onMount, onCleanup, For, Show } from 'solid-js';
 import { useSearchParams, A } from '@solidjs/router';
 import { fetchSeries } from '../api.js';
 import { cleanTitle, formatTime } from '../utils.js';
-import { resolveGesture, resetGestureState, GESTURE_TYPES } from '../gestures.js';
+import { resolveGesture, resetGestureState, GESTURE_TYPES, SEEK_TYPE_BADGE_ICON } from '../gestures.js';
 import {
     loadSeasonProgress,
     saveEpisodeProgress,
@@ -130,6 +130,16 @@ export default function PlayerPage() {
         setOsd((prev) => ({ ...prev, visible: false }));
         seekAccum = 0;
         seekAccumSide = null;
+    }
+
+    /**
+     * Seek badge: the same centered OSD (and icon) the double-tap skip uses,
+     * driven by the horizontal seek-drag gesture.
+     * @param {number} delta seconds relative to the position where the drag started
+     */
+    function showSeekBadge(delta) {
+        const sign = delta >= 0 ? '+' : '−';
+        showOSD(SEEK_TYPE_BADGE_ICON, formatTime(video?.currentTime || 0), `${sign}${Math.abs(Math.round(delta))}s`);
     }
 
     function resetControlsTimer() {
@@ -529,12 +539,12 @@ export default function PlayerPage() {
                     break;
                 case KEY_ACTIONS.SEEK_BACK:
                     video.currentTime = Math.max(0, video.currentTime - SEEK_STEP_SECONDS);
-                    showOSD('fa-backward', `-${SEEK_STEP_SECONDS}s`);
+                    showOSD(SEEK_TYPE_BADGE_ICON, `-${SEEK_STEP_SECONDS}s`);
                     resetControlsTimer();
                     break;
                 case KEY_ACTIONS.SEEK_FORWARD:
                     video.currentTime = Math.min(video.duration || 0, video.currentTime + SEEK_STEP_SECONDS);
-                    showOSD('fa-forward', `+${SEEK_STEP_SECONDS}s`);
+                    showOSD(SEEK_TYPE_BADGE_ICON, `+${SEEK_STEP_SECONDS}s`);
                     resetControlsTimer();
                     break;
                 case KEY_ACTIONS.VOLUME_UP:
@@ -576,6 +586,10 @@ export default function PlayerPage() {
             // scrollable panel), let the panel handle the gesture instead of
             // seeking / changing volume or brightness.
             if (activePanel() || (event.target instanceof Element && event.target.closest('.custom-scrollbar'))) return;
+            // The seek bar handles horizontal drags itself (native range input);
+            // letting the gesture layer claim them would adjust brightness or
+            // volume while the user is only scrubbing the position slider.
+            if (event.target instanceof Element && event.target.closest('.mx-progress')) return;
             const touch = event.touches[0];
             const rect = playerContainer.getBoundingClientRect();
             const x = touch.clientX - rect.left;
@@ -618,8 +632,7 @@ export default function PlayerPage() {
 
             if (result.type === GESTURE_TYPES.SEEK) {
                 video.currentTime = result.time;
-                const sign = result.delta >= 0 ? '+' : '';
-                showOSD('fa-arrow-right-arrow-left', formatTime(result.time), `${sign}${Math.round(result.delta)}s`);
+                showSeekBadge(result.delta);
             } else if (result.type === GESTURE_TYPES.BRIGHTNESS) {
                 setBrightness(result.value);
                 showOSD('fa-sun', `${result.percent}%`, 'Brightness');
@@ -633,6 +646,9 @@ export default function PlayerPage() {
             swiping = false;
             gestureState = resetGestureState();
             activeSide = null;
+            // Drop the seek badge immediately when the drag ends; other OSDs
+            // (brightness, volume) keep their 1.2s linger.
+            if (osd().icon === SEEK_TYPE_BADGE_ICON) hideOSD();
         };
 
         const onMouseMove = () => {

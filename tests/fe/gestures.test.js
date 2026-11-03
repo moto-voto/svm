@@ -103,22 +103,37 @@ test('volume is clamped to [0, 1]', () => {
     assert.equal(high.value, 1);
 });
 
-test('a long horizontal drag no longer seeks (horizontal scroll removed)', () => {
-    const result = resolveGesture(
+test('a long horizontal drag seeks, on either side (regression: sideways drag must not change brightness/volume)', () => {
+    const left = resolveGesture(
         resetGestureState(),
-        input({ side: 'left', currentX: 50, currentY: 0, width: 100, currentTime: 30, duration: 100 })
+        input({ side: 'left', currentX: 60, currentY: 0, width: 100, currentTime: 30, duration: 100 })
     );
+    assert.equal(left.type, GESTURE_TYPES.SEEK);
+    assert.equal(left.delta, seekDelta(60, 100));
+    assert.equal(left.time, 30 + seekDelta(60, 100)); // frozen at currentTime=30
 
-    assert.equal(result.type, GESTURE_TYPES.IGNORE);
+    const right = resolveGesture(
+        resetGestureState(),
+        input({ side: 'right', currentX: -40, currentY: 0, width: 100, currentTime: 30, duration: 100 })
+    );
+    assert.equal(right.type, GESTURE_TYPES.SEEK);
+    assert.equal(right.delta, seekDelta(-40, 100));
+    assert.equal(right.time, 0); // clamped at the start of the video
 });
 
-test('horizontal gesture is ignored even if state marked horizontal', () => {
-    const state = { horizontal: true, seekStart: 30 };
-    const result = resolveGesture(
-        state,
-        input({ side: 'left', currentX: 50, currentY: 5, width: 100, duration: 100 })
-    );
-    assert.equal(result.type, GESTURE_TYPES.IGNORE);
+test('seek drags are absolute: the base time freezes on the first qualifying move', () => {
+    let state = resetGestureState();
+    const first = resolveGesture(state, input({ currentX: 30, currentY: 0, currentTime: 30 }));
+    assert.equal(first.type, GESTURE_TYPES.SEEK);
+    assert.equal(first.time, 30 + seekDelta(30, 100));
+    state = first.state;
+    assert.equal(state.horizontal, true);
+    assert.equal(state.seekStart, 30);
+
+    const second = resolveGesture(state, input({ currentX: 50, currentY: 0, currentTime: 999 }));
+    assert.equal(second.type, GESTURE_TYPES.SEEK);
+    assert.equal(second.time, 30 + seekDelta(50, 100)); // base not refrozen mid-drag
+    assert.equal(second.state.seekStart, 30);
 });
 
 test('seekDelta scales with width', () => {
