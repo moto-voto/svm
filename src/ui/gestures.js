@@ -42,6 +42,7 @@ export const GESTURE_TYPES = Object.freeze({
  * Fresh per-touch gesture state. `type` stays IGNORE until the first
  * decisive move locks it (seek / brightness / volume); it is only reset
  * when the touch ends.
+ * @returns {GestureState}
  */
 export function resetGestureState() {
     return { type: GESTURE_TYPES.IGNORE, seekStart: 0 };
@@ -85,7 +86,7 @@ export function volumeIconFor(percent) {
     return percent > 50 ? 'fa-volume-high' : 'fa-volume-low';
 }
 
-/** @typedef {{ type: string, seekStart: number }} GestureState */
+/** @typedef {{ type: (typeof GESTURE_TYPES)[keyof typeof GESTURE_TYPES], seekStart: number }} GestureState */
 
 /**
  * @typedef {{
