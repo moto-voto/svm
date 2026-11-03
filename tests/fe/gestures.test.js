@@ -5,10 +5,12 @@ import {
     resolveGesture,
     resetGestureState,
     isHorizontalGesture,
+    isVerticalGesture,
     seekDelta,
     volumeIconFor,
     GESTURE_TYPES,
     SEEK_THRESHOLD_PX,
+    VERTICAL_THRESHOLD_PX,
 } from '../../src/ui/gestures.js';
 
 /**
@@ -33,8 +35,8 @@ function input(overrides = {}) {
     };
 }
 
-test('resetGestureState returns a fresh, non-horizontal state', () => {
-    assert.deepEqual(resetGestureState(), { horizontal: false, seekStart: 0 });
+test('resetGestureState returns a fresh, undecided state', () => {
+    assert.deepEqual(resetGestureState(), { type: GESTURE_TYPES.IGNORE, seekStart: 0 });
 });
 
 test('isHorizontalGesture requires sideways travel beyond the threshold', () => {
@@ -43,6 +45,15 @@ test('isHorizontalGesture requires sideways travel beyond the threshold', () => 
     assert.equal(isHorizontalGesture(SEEK_THRESHOLD_PX, SEEK_THRESHOLD_PX), false);
     assert.equal(isHorizontalGesture(10, 5), false); // below threshold
     assert.equal(isHorizontalGesture(5, 30), false); // vertical wins
+});
+
+test('isVerticalGesture requires up/down travel beyond the lock threshold', () => {
+    assert.equal(isVerticalGesture(5, 30), true);
+    assert.equal(isVerticalGesture(30, 30), true); // exact 45 degrees counts as vertical
+    assert.equal(isVerticalGesture(0, VERTICAL_THRESHOLD_PX + 1), true);
+    assert.equal(isVerticalGesture(0, VERTICAL_THRESHOLD_PX), false); // at threshold, not beyond
+    assert.equal(isVerticalGesture(0, 5), false); // below threshold
+    assert.equal(isVerticalGesture(30, 29), false); // horizontal wins
 });
 
 test('a locked player ignores gestures', () => {
@@ -60,20 +71,24 @@ test('a touch starting inside a scroller ignores gestures', () => {
     assert.equal(result.type, GESTURE_TYPES.IGNORE);
 });
 
-test('a small horizontal drag stays vertical (no accidental seek)', () => {
-    const result = resolveGesture(resetGestureState(), input({ side: 'left', currentX: 10, currentY: 0 }));
-    assert.equal(result.type, GESTURE_TYPES.BRIGHTNESS);
+test('a drag below both lock thresholds stays undecided (no accidental seek/volume)', () => {
+    const horizontal = resolveGesture(resetGestureState(), input({ side: 'left', currentX: 10, currentY: 0 }));
+    assert.equal(horizontal.type, GESTURE_TYPES.IGNORE);
+    assert.deepEqual(horizontal.state, resetGestureState());
+
+    const tinyVertical = resolveGesture(resetGestureState(), input({ side: 'right', currentX: 2, currentY: -5 }));
+    assert.equal(tinyVertical.type, GESTURE_TYPES.IGNORE);
 });
 
 test('vertical drag on the left adjusts brightness', () => {
-    // startValue 0.5, drag up 10px => +0.05
+    // startValue 0.5, drag up 12px => +0.06
     const result = resolveGesture(
         resetGestureState(),
-        input({ side: 'left', startValue: 0.5, currentX: 3, currentY: -10 })
+        input({ side: 'left', startValue: 0.5, currentX: 3, currentY: -12 })
     );
     assert.equal(result.type, GESTURE_TYPES.BRIGHTNESS);
-    assert.ok(Math.abs(result.value - 0.55) < 1e-9);
-    assert.equal(result.percent, 55);
+    assert.ok(Math.abs(result.value - 0.56) < 1e-9);
+    assert.equal(result.percent, 56);
 });
 
 test('vertical drag on the right adjusts volume', () => {
@@ -127,13 +142,54 @@ test('seek drags are absolute: the base time freezes on the first qualifying mov
     assert.equal(first.type, GESTURE_TYPES.SEEK);
     assert.equal(first.time, 30 + seekDelta(30, 100));
     state = first.state;
-    assert.equal(state.horizontal, true);
+    assert.equal(state.type, GESTURE_TYPES.SEEK);
     assert.equal(state.seekStart, 30);
 
     const second = resolveGesture(state, input({ currentX: 50, currentY: 0, currentTime: 999 }));
     assert.equal(second.type, GESTURE_TYPES.SEEK);
     assert.equal(second.time, 30 + seekDelta(50, 100)); // base not refrozen mid-drag
     assert.equal(second.state.seekStart, 30);
+});
+
+test('a locked vertical swipe cannot turn into a seek when the finger drifts sideways (regression)', () => {
+    // Start a volume swipe (right side, drag up 30px) — locks to VOLUME.
+    let state = resetGestureState();
+    const first = resolveGesture(state, input({ side: 'right', startValue: 0.5, currentX: 0, currentY: -30 }));
+    assert.equal(first.type, GESTURE_TYPES.VOLUME);
+    assert.equal(first.state.type, GESTURE_TYPES.VOLUME);
+    state = first.state;
+
+    // The finger drifts to ~45+ degrees horizontal: |dx|=100 > |dy|=30 and
+    // beyond the seek threshold — an unlocked gesture would switch to SEEK.
+    const second = resolveGesture(state, input({ side: 'right', startValue: 0.5, currentX: 100, currentY: -30 }));
+    assert.equal(second.type, GESTURE_TYPES.VOLUME);
+    assert.equal(second.state.type, GESTURE_TYPES.VOLUME);
+    // Still driven by the vertical travel only: 0.5 + 30 * 0.005 = 0.65.
+    assert.ok(Math.abs(second.value - 0.65) < 1e-9);
+    assert.equal(second.percent, 65);
+
+    // Same for brightness on the left side.
+    let bState = resetGestureState();
+    const bFirst = resolveGesture(bState, input({ side: 'left', startValue: 0.5, currentX: 0, currentY: -30 }));
+    assert.equal(bFirst.type, GESTURE_TYPES.BRIGHTNESS);
+    const bSecond = resolveGesture(bFirst.state, input({ side: 'left', startValue: 0.5, currentX: -80, currentY: -30 }));
+    assert.equal(bSecond.type, GESTURE_TYPES.BRIGHTNESS);
+    assert.ok(Math.abs(bSecond.value - 0.65) < 1e-9);
+});
+
+test('a locked seek cannot turn into volume/brightness when the finger drifts vertically (regression)', () => {
+    let state = resetGestureState();
+    const first = resolveGesture(state, input({ side: 'right', currentX: 30, currentY: 0, currentTime: 30 }));
+    assert.equal(first.type, GESTURE_TYPES.SEEK);
+    state = first.state;
+
+    // The finger drifts mostly vertical: |dy|=200 > |dx|=30 — an unlocked
+    // gesture would switch to VOLUME.
+    const second = resolveGesture(state, input({ side: 'right', currentX: 30, currentY: 200, currentTime: 999 }));
+    assert.equal(second.type, GESTURE_TYPES.SEEK);
+    assert.equal(second.state.type, GESTURE_TYPES.SEEK);
+    // Still driven by the horizontal travel only, base frozen at 30.
+    assert.equal(second.time, 30 + seekDelta(30, 100));
 });
 
 test('seekDelta scales with width', () => {
@@ -150,9 +206,9 @@ test('volumeIconFor maps percentages to icons', () => {
 });
 
 test('resolveGesture does not mutate the input state', () => {
-    const state = Object.freeze({ horizontal: false, seekStart: 0 });
-    const result = resolveGesture(state, input({ side: 'right', currentY: -10 }));
+    const state = Object.freeze({ type: GESTURE_TYPES.IGNORE, seekStart: 0 });
+    const result = resolveGesture(state, input({ side: 'right', currentY: -15 }));
     assert.equal(result.type, GESTURE_TYPES.VOLUME);
-    assert.deepEqual(result.state, { horizontal: false, seekStart: 0 });
-    assert.deepEqual(state, { horizontal: false, seekStart: 0 });
+    assert.deepEqual(result.state, { type: GESTURE_TYPES.VOLUME, seekStart: 0 });
+    assert.deepEqual(state, { type: GESTURE_TYPES.IGNORE, seekStart: 0 });
 });

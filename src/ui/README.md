@@ -250,5 +250,6 @@ src/ui/
 Component behaviour is hard to unit test without a DOM harness, so decision
 logic and math are extracted into dependency-free modules under `src/ui/*.js`
 and covered by the standard `node:test` suite. This keeps bug fixes cheap to
-lock down (e.g. the "panel scroll must not seek the video" regression is a
-plain assertion in `tests/fe/gestures.test.js`).
+lock down (e.g. the "panel scroll must not seek the video" and "a locked
+gesture type cannot change mid-swipe" regressions are plain assertions in
+`tests/fe/gestures.test.js`).

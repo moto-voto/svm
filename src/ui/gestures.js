@@ -9,8 +9,15 @@ import { clamp } from './utils.js';
  * down with a plain unit test.
  */
 
-/** Minimum horizontal travel (px) before a drag switches to seek mode. */
+/** Minimum horizontal travel (px) before a drag can lock to seek mode. */
 export const SEEK_THRESHOLD_PX = 20;
+
+/**
+ * Minimum vertical travel (px) before a drag can lock to brightness/volume.
+ * Smaller than the seek threshold so the vertical OSD stays responsive, but
+ * big enough that tap jitter never locks a gesture.
+ */
+export const VERTICAL_THRESHOLD_PX = 10;
 
 /** Seconds spanned by a full-width horizontal drag. */
 export const SEEK_RANGE_SECONDS = 90;
@@ -31,9 +38,13 @@ export const GESTURE_TYPES = Object.freeze({
     VOLUME: 'volume',
 });
 
-/** Fresh per-touch gesture state. */
+/**
+ * Fresh per-touch gesture state. `type` stays IGNORE until the first
+ * decisive move locks it (seek / brightness / volume); it is only reset
+ * when the touch ends.
+ */
 export function resetGestureState() {
-    return { horizontal: false, seekStart: 0 };
+    return { type: GESTURE_TYPES.IGNORE, seekStart: 0 };
 }
 
 /**
@@ -43,6 +54,17 @@ export function resetGestureState() {
  */
 export function isHorizontalGesture(deltaX, deltaY) {
     return Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SEEK_THRESHOLD_PX;
+}
+
+/**
+ * A drag is vertical when it travels further up/down than sideways, beyond
+ * the lock threshold. Exact ties (45 degrees) count as vertical, matching
+ * isHorizontalGesture's strict comparison.
+ * @param {number} deltaX
+ * @param {number} deltaY
+ */
+export function isVerticalGesture(deltaX, deltaY) {
+    return Math.abs(deltaY) >= Math.abs(deltaX) && Math.abs(deltaY) > VERTICAL_THRESHOLD_PX;
 }
 
 /**
@@ -63,22 +85,24 @@ export function volumeIconFor(percent) {
     return percent > 50 ? 'fa-volume-high' : 'fa-volume-low';
 }
 
+/** @typedef {{ type: string, seekStart: number }} GestureState */
+
 /**
  * @typedef {{
- *   state: { horizontal: boolean, seekStart: number },
+ *   state: GestureState,
  *   type: 'ignore',
  * } | {
- *   state: { horizontal: boolean, seekStart: number },
+ *   state: GestureState,
  *   type: 'seek',
  *   time: number,
  *   delta: number,
  * } | {
- *   state: { horizontal: boolean, seekStart: number },
+ *   state: GestureState,
  *   type: 'brightness',
  *   value: number,
  *   percent: number,
  * } | {
- *   state: { horizontal: boolean, seekStart: number },
+ *   state: GestureState,
  *   type: 'volume',
  *   value: number,
  *   percent: number,
@@ -89,7 +113,14 @@ export function volumeIconFor(percent) {
 /**
  * Resolve one touch-move into a decision, without side effects.
  *
- * @param {{ horizontal: boolean, seekStart: number }} state
+ * The gesture type is decided once — on the first move that is decisively
+ * horizontal (seek) or vertical (brightness/volume by side) — and then
+ * locked in the returned state: later moves of the same touch keep the
+ * locked type no matter how the finger drifts (a vertical swipe that goes
+ * 45 degrees must not start seeking). The component resets the state on
+ * touchend, which is the only way the type can change.
+ *
+ * @param {GestureState} state
  * @param {{
  *   locked?: boolean,
  *   panelOpen?: boolean,
@@ -115,37 +146,47 @@ export function resolveGesture(state, input) {
     const deltaX = input.currentX - input.startX;
     const deltaY = input.startY - input.currentY;
 
-    // A sideways drag beyond the threshold is a seek, on either side: the drag
-    // is absolute (relative to where the gesture started), so it can scrub
-    // backwards as well as forwards. Vertical drags keep their per-side
-    // meaning (left = brightness, right = volume).
-    if (isHorizontalGesture(deltaX, deltaY)) {
-        // The seek base time is frozen on the first qualifying move so the
-        // position tracks the finger exactly instead of accumulating.
-        const seekStart = state.horizontal ? state.seekStart : input.currentTime;
+    // Lock the type on the first decisive move; afterwards it cannot change
+    // until the touch ends. Moves below both thresholds (tap jitter) leave
+    // the gesture undecided.
+    let type = state.type;
+    if (type === GESTURE_TYPES.IGNORE) {
+        if (isHorizontalGesture(deltaX, deltaY)) {
+            type = GESTURE_TYPES.SEEK;
+        } else if (isVerticalGesture(deltaX, deltaY)) {
+            type = input.side === 'left' ? GESTURE_TYPES.BRIGHTNESS : GESTURE_TYPES.VOLUME;
+        } else {
+            return { state, type: GESTURE_TYPES.IGNORE };
+        }
+    }
+
+    if (type === GESTURE_TYPES.SEEK) {
+        // A sideways drag is a seek, on either side: the drag is absolute
+        // (relative to where the gesture started), so it can scrub backwards
+        // as well as forwards. The seek base time is frozen on the first
+        // qualifying move so the position tracks the finger exactly instead
+        // of accumulating.
+        const seekStart = state.type === GESTURE_TYPES.SEEK ? state.seekStart : input.currentTime;
+        const delta = seekDelta(deltaX, input.width);
         return {
-            state: { horizontal: true, seekStart },
+            state: { type: GESTURE_TYPES.SEEK, seekStart },
             type: GESTURE_TYPES.SEEK,
-            time: clamp(seekStart + seekDelta(deltaX, input.width), 0, Math.max(0, input.duration)),
-            delta: seekDelta(deltaX, input.width),
+            time: clamp(seekStart + delta, 0, Math.max(0, input.duration)),
+            delta,
         };
     }
 
-    if (input.side === 'left') {
-        const value = clamp(input.startValue + deltaY * DRAG_SENSITIVITY, BRIGHTNESS_MIN, 1);
-        return {
-            state,
-            type: GESTURE_TYPES.BRIGHTNESS,
-            value,
-            percent: Math.round(value * 100),
-        };
-    }
-
-    const value = clamp(input.startValue + deltaY * DRAG_SENSITIVITY, 0, 1);
+    // Vertical drags keep their per-side meaning (left = brightness,
+    // right = volume) and track the finger absolutely from the start value.
+    const min = type === GESTURE_TYPES.BRIGHTNESS ? BRIGHTNESS_MIN : 0;
+    const value = clamp(input.startValue + deltaY * DRAG_SENSITIVITY, min, 1);
     const percent = Math.round(value * 100);
+    if (type === GESTURE_TYPES.BRIGHTNESS) {
+        return { state: { type, seekStart: state.seekStart }, type, value, percent };
+    }
     return {
-        state,
-        type: GESTURE_TYPES.VOLUME,
+        state: { type, seekStart: state.seekStart },
+        type,
         value,
         percent,
         icon: volumeIconFor(percent),
