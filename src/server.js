@@ -25,6 +25,16 @@ const BASE_PATH = `/${String(rawBase).replace(/^\/+|\/+$/g, '')}`.replace(/^\/$/
 const app = express();
 const router = express.Router();
 
+// Request logging: endpoint, parameters, HTTP status, and processing time.
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const params = { ...req.params, ...req.query };
+        log('log', `${req.method} ${req.path} params=${JSON.stringify(params)} HTTP status=${res.statusCode} duration=${Date.now() - start}ms`);
+    });
+    next();
+});
+
 // ---- API ----
 
 router.get('/api/search', async (req, res) => {
