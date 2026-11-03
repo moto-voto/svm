@@ -49,7 +49,6 @@ export default function HistoryPage() {
     const [items, setItems] = createSignal(restoredState ? restoredState.items : []);
     const [loading, setLoading] = createSignal(!restoredState);
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
-    const [stats, setStats] = createSignal(restoredState ? restoredState.stats : '0 / 0');
     // Whether *any* series has been watched (distinguishes "history is empty"
     // from "no search match").
     const [hasHistory, setHasHistory] = createSignal(true);
@@ -64,7 +63,7 @@ export default function HistoryPage() {
     /** Persist the current listing and viewport position. */
     const persist = () => {
         if (!items().length) return;
-        saveHistoryState({ items: items(), stats: stats(), query: activeQuery(), anchor: latestAnchor });
+        saveHistoryState({ items: items(), query: activeQuery(), anchor: latestAnchor });
     };
 
     /** @param {SubmitEvent} event */
@@ -93,7 +92,7 @@ export default function HistoryPage() {
             setHasHistory(records.length > 0);
             const tiles = buildHistoryTiles(records, q);
             setItems(tiles);
-            saveHistoryState({ items: tiles, stats: stats(), query: q, anchor: null });
+            saveHistoryState({ items: tiles, query: q, anchor: null });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error: ' + String(err));
             setItems([]);
@@ -123,13 +122,6 @@ export default function HistoryPage() {
             <Header
                 maxWidth="max-w-7xl"
                 nav={<ViewSwitcher current="history" />}
-                topRight={
-                    <Show when={stats()}>
-                        <span class="text-xs bg-brand-orange/15 text-brand-orange font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
-                            {stats()}
-                        </span>
-                    </Show>
-                }
             >
                 <form
                     class="w-full flex items-center shadow-inner rounded overflow-hidden bg-[#2d2d2d] border border-neutral-700/60 focus-within:border-brand-orange transition-colors"
@@ -200,15 +192,6 @@ export default function HistoryPage() {
                     topLeftBadge={seasonBadge}
                     topRightBadge={episodeBadge}
                     onViewportChange={(anchor) => { latestAnchor = anchor; }}
-                    onStats={(newStats) => {
-                        setStats(newStats);
-                        // Only persist settled, successful listings; while a load
-                        // is in flight (or failed) the stored state must keep
-                        // belonging to the previous query.
-                        if (!loading() && !error()) {
-                            persist();
-                        }
-                    }}
                 />
             </main>
         </div>

@@ -144,12 +144,3 @@ export function scrollPositionForAnchor({ layout, anchor, containerTop }) {
     if (top === null) return null;
     return Math.max(0, containerTop + top + anchor.offset);
 }
-
-/**
- * Human-readable stats label for the header badge.
- * @param {number} mounted number of currently mounted nodes
- * @param {number} total total number of items
- */
-export function formatGridStats(mounted, total) {
-    return total === 0 ? '0 / 0' : `${mounted} visible (${total.toLocaleString()} total)`;
-}

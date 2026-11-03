@@ -34,7 +34,6 @@ export default function FilterPage() {
     const [items, setItems] = createSignal(restoredState ? restoredState.items : []);
     const [loading, setLoading] = createSignal(!restoredState);
     const [error, setError] = createSignal(/** @type {string | null} */ (null));
-    const [stats, setStats] = createSignal(restoredState ? restoredState.stats : '0 / 0');
 
     // `genre`/`country`/`sort` are the select values; they are also the
     // applied ones — the filter fires immediately on change.
@@ -52,7 +51,6 @@ export default function FilterPage() {
         if (!items().length) return;
         saveFilterState({
             items: items(),
-            stats: stats(),
             genre: genre(),
             country: country(),
             sort: sort(),
@@ -87,7 +85,7 @@ export default function FilterPage() {
         try {
             const results = await filterSeries(g, c, s);
             setItems(results);
-            saveFilterState({ items: results, stats: stats(), genre: g, country: c, sort: s, anchor: null });
+            saveFilterState({ items: results, genre: g, country: c, sort: s, anchor: null });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error: ' + String(err));
             setItems([]);
@@ -125,13 +123,6 @@ export default function FilterPage() {
             <Header
                 maxWidth="max-w-7xl"
                 nav={<ViewSwitcher current="filter" />}
-                topRight={
-                    <Show when={stats()}>
-                        <span class="text-xs bg-brand-orange/15 text-brand-orange font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
-                            {stats()}
-                        </span>
-                    </Show>
-                }
             >
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <label class="flex items-center gap-2 bg-[#2d2d2d] border border-neutral-700/60 rounded overflow-hidden focus-within:border-brand-orange transition-colors">
@@ -212,15 +203,6 @@ export default function FilterPage() {
                     restoreAnchor={restoredState?.anchor ?? null}
                     detailsFrom="filter"
                     onViewportChange={(anchor) => { latestAnchor = anchor; }}
-                    onStats={(newStats) => {
-                        setStats(newStats);
-                        // Only persist settled, successful results; while a load
-                        // is in flight (or failed) the stored state must keep
-                        // belonging to the previous filter.
-                        if (!loading() && !error()) {
-                            persist();
-                        }
-                    }}
                 />
             </main>
         </div>

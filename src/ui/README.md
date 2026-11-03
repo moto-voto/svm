@@ -174,7 +174,7 @@ Unit tests use the built-in Node.js test runner (`node:test`) and live under
   - `src/ui/api.js` (backend client)
   - `src/ui/api-cache.js` (per-URL TTL cache wrapper: raw-text storage, request dedup, never-cache-failures)
   - `src/ui/utils.js` (`clamp`, `normalizeQuery`, `cleanTitle`, `formatTime`, base-path helpers)
-  - `src/ui/grid-layout.js` (virtualized-grid math + stats label)
+  - `src/ui/grid-layout.js` (virtualized-grid math)
   - `src/ui/gestures.js` (`resolveGesture` touch decision logic)
   - `src/ui/player.js` (progress/seek, tap/keyboard decisions, index helpers)
   - `src/ui/watch-progress.js` (IndexedDB watch-progress keys/resume/merge helpers
@@ -240,7 +240,7 @@ src/ui/
 │   ├── SeriesDetailsPage.jsx   # series details card (+ bookmark toggle)
 │   └── player.css              # player-specific styles
 └── components/
-    ├── Header.jsx              # unified header (brand, optional stats + search)
+    ├── Header.jsx              # unified header (view switcher + page controls)
     ├── ViewSwitcher.jsx        # Search/History/Bookmarks segmented control
     └── VirtualGrid.jsx         # virtualized/windowed poster grid
 ```

@@ -52,7 +52,7 @@ function withLocalStorage(fn) {
 test('resolveFilterRestore restores the last filter on a bare URL (switcher visit)', () => {
     // Clicking "Фильтр" in the view switcher lands on `/filter` (no params);
     // the session's last filter is reused.
-    const stored = { items: [], stats: '5 / 5', genre: '19', country: 'all', sort: 'imdb' };
+    const stored = { items: [], genre: '19', country: 'all', sort: 'imdb' };
     assert.deepEqual(resolveFilterRestore(undefined, undefined, undefined, stored), {
         genre: '19',
         country: 'all',
@@ -62,7 +62,7 @@ test('resolveFilterRestore restores the last filter on a bare URL (switcher visi
 });
 
 test('resolveFilterRestore reuses the full last filter on a bare URL', () => {
-    const stored = { items: [], stats: '5 / 5', genre: '19', country: 'США', sort: 'view' };
+    const stored = { items: [], genre: '19', country: 'США', sort: 'view' };
     assert.deepEqual(resolveFilterRestore(undefined, undefined, undefined, stored), {
         genre: '19',
         country: 'США',
@@ -72,7 +72,7 @@ test('resolveFilterRestore reuses the full last filter on a bare URL', () => {
 });
 
 test('resolveFilterRestore restores on reload of the same ?g=/?c=/?s=', () => {
-    const stored = { items: [], stats: '5 / 5', genre: '19', country: 'США', sort: 'view' };
+    const stored = { items: [], genre: '19', country: 'США', sort: 'view' };
     assert.deepEqual(resolveFilterRestore('19', 'США', 'view', stored), {
         genre: '19',
         country: 'США',
@@ -82,7 +82,7 @@ test('resolveFilterRestore restores on reload of the same ?g=/?c=/?s=', () => {
 });
 
 test('resolveFilterRestore lets the URL values win over the stored state', () => {
-    const stored = { items: [], stats: '5 / 5', genre: '19', country: 'all', sort: 'imdb' };
+    const stored = { items: [], genre: '19', country: 'all', sort: 'imdb' };
     // Deep link ?g=1&c=США&s=god while the session still holds 19/all/imdb.
     assert.deepEqual(resolveFilterRestore('1', 'США', 'god', stored), {
         genre: '1',
@@ -111,7 +111,7 @@ test('resolveFilterRestore defaults to all/name with neither URL nor storage', (
 });
 
 test('resolveFilterRestore normalizes a URL sort to the default when missing', () => {
-    const stored = { items: [], stats: '5 / 5', genre: '19', country: 'США', sort: 'view' };
+    const stored = { items: [], genre: '19', country: 'США', sort: 'view' };
     // ?g=19&c=США without ?s= -> sort comes from the URL default (name), so
     // the stored 'view' listing must not be restored.
     assert.deepEqual(resolveFilterRestore('19', 'США', undefined, stored), {
@@ -123,7 +123,7 @@ test('resolveFilterRestore normalizes a URL sort to the default when missing', (
 });
 
 test('resolveFilterRestore does not restore a state for a different sort', () => {
-    const stored = { items: [], stats: '5 / 5', genre: '19', country: 'США', sort: 'view' };
+    const stored = { items: [], genre: '19', country: 'США', sort: 'view' };
     const resolved = resolveFilterRestore('19', 'США', 'imdb', stored);
     assert.equal(resolved.sort, 'imdb');
     assert.equal(resolved.restored, null);
@@ -133,11 +133,11 @@ test('saveFilterState remembers and replaces the last filter', () => {
     saveFilterState(null);
     assert.equal(getStoredFilterState(), null);
 
-    const first = { items: [{ title: 'a' }], stats: '1 / 1', genre: '19', country: 'all', sort: 'name' };
+    const first = { items: [{ title: 'a' }], genre: '19', country: 'all', sort: 'name' };
     saveFilterState(first);
     assert.equal(getStoredFilterState(), first);
 
-    const second = { items: [], stats: '0 / 0', genre: 'all', country: 'США', sort: 'imdb' };
+    const second = { items: [], genre: 'all', country: 'США', sort: 'imdb' };
     saveFilterState(second);
     assert.equal(getStoredFilterState(), second);
 
@@ -148,13 +148,13 @@ test('saveFilterState remembers and replaces the last filter', () => {
 test('saveFilterState persists filter values to localStorage', () => {
     withLocalStorage((storage) => {
         saveFilterState(null);
-        const first = { items: [{ title: 'a' }], stats: '1 / 1', genre: '19', country: 'all', sort: 'name' };
+        const first = { items: [{ title: 'a' }], genre: '19', country: 'all', sort: 'name' };
         saveFilterState(first);
         const raw = storage.getItem('svm:filter:last');
         assert.ok(raw);
         assert.deepEqual(JSON.parse(raw), { genre: '19', country: 'all', sort: 'name' });
 
-        const second = { items: [], stats: '0 / 0', genre: 'all', country: 'США', sort: 'imdb' };
+        const second = { items: [], genre: 'all', country: 'США', sort: 'imdb' };
         saveFilterState(second);
         assert.deepEqual(JSON.parse(storage.getItem('svm:filter:last')), { genre: 'all', country: 'США', sort: 'imdb' });
 

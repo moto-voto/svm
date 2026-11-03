@@ -13,7 +13,6 @@
 /**
  * @typedef {Object} BookmarksState
  * @property {BookmarkTile[]} items
- * @property {string} stats
  * @property {string} query normalized query the items belong to
  * @property {{ index: number, offset: number } | null} [anchor] viewport
  *   position: top-most visible item and the scroll offset past its top edge

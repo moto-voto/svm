@@ -10,17 +10,17 @@ import {
 
 test('resolveBookmarksRestore restores the last listing when returning without ?q=', () => {
     // Back navigation from SeriesDetailsPage lands on `/bookmarks` (no query).
-    const stored = { items: [], stats: '5 / 5', query: 'one' };
+    const stored = { items: [], query: 'one' };
     assert.deepEqual(resolveBookmarksRestore('', stored), { query: 'one', restored: stored });
 });
 
 test('resolveBookmarksRestore restores on reload of the same ?q=', () => {
-    const stored = { items: [], stats: '5 / 5', query: 'one' };
+    const stored = { items: [], query: 'one' };
     assert.deepEqual(resolveBookmarksRestore('one', stored), { query: 'one', restored: stored });
 });
 
 test('resolveBookmarksRestore lets the URL query win over the stored state', () => {
-    const stored = { items: [], stats: '5 / 5', query: 'one' };
+    const stored = { items: [], query: 'one' };
     assert.deepEqual(resolveBookmarksRestore('two', stored), { query: 'two', restored: null });
 });
 
@@ -33,7 +33,7 @@ test('resolveBookmarksRestore triggers a fresh listing with neither URL nor stor
 });
 
 test('invalidateBookmarksState drops the snapshot so the next visit refetches', () => {
-    const stored = { items: [{ title: 'a' }], stats: '1 / 1', query: 'one' };
+    const stored = { items: [{ title: 'a' }], query: 'one' };
     saveBookmarksState(stored);
     invalidateBookmarksState();
     assert.equal(getStoredBookmarksState(), null);
@@ -45,11 +45,11 @@ test('saveBookmarksState remembers and replaces the last listing', () => {
     saveBookmarksState(null);
     assert.equal(getStoredBookmarksState(), null);
 
-    const first = { items: [{ title: 'a' }], stats: '1 / 1', query: 'one' };
+    const first = { items: [{ title: 'a' }], query: 'one' };
     saveBookmarksState(first);
     assert.equal(getStoredBookmarksState(), first);
 
-    const second = { items: [], stats: '0 / 0', query: 'two' };
+    const second = { items: [], query: 'two' };
     saveBookmarksState(second);
     assert.equal(getStoredBookmarksState(), second);
 

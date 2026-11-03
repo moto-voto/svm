@@ -1,6 +1,6 @@
 import { createSignal, createMemo, createEffect, onMount, onCleanup, For, Show } from 'solid-js';
 import { A } from '@solidjs/router';
-import { computeLayout, computeVisibleIndices, positionFor, formatGridStats, anchorFor, scrollPositionForAnchor } from '../grid-layout.js';
+import { computeLayout, computeVisibleIndices, positionFor, anchorFor, scrollPositionForAnchor } from '../grid-layout.js';
 
 /**
  * Item shape the grid renders. SerialDescription (search page) satisfies it
@@ -22,7 +22,6 @@ import { computeLayout, computeVisibleIndices, positionFor, formatGridStats, anc
  *   items: GridItem[],
  *   topLeftBadge?: (item: GridItem) => string | null,
  *   topRightBadge?: (item: GridItem) => string | null,
- *   onStats?: (stats: string) => void,
  *   onViewportChange?: (anchor: { index: number, offset: number }) => void,
  *   restoreAnchor?: { index: number, offset: number } | null,
  *   detailsFrom?: string,
@@ -68,11 +67,6 @@ export default function VirtualGrid(props) {
 
     /** Absolute position for a card at the given item index. */
     const position = (/** @type {number} */ index) => positionFor(layout(), index);
-
-    // Keep the header stats in sync with what is actually mounted.
-    createEffect(() => {
-        props.onStats?.(formatGridStats(visibleIndices().length, props.items.length));
-    });
 
     // Report the viewport anchor (top-most visible item + scroll offset past
     // it) so the parent can restore the scroll position when the user comes

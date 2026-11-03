@@ -18,7 +18,6 @@ const STORAGE_KEY = 'svm:filter:last';
 /**
  * @typedef {Object} FilterState
  * @property {SerialDescription[]} items
- * @property {string} stats
  * @property {string} genre normalized genre id the results belong to ('all' when unset)
  * @property {string} country normalized country name the results belong to ('all' when unset)
  * @property {string} sort normalized sort option the results belong to ('name' when unset)
