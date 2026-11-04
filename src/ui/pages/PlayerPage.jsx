@@ -29,6 +29,9 @@ import {
     KEY_ACTIONS,
     SEEK_STEP_SECONDS,
     VOLUME_STEP,
+    SLEEP_TIMER_MS,
+    isSleepTimerExpired,
+    SLEEP_TIMER_MESSAGE,
 } from '../player.js';
 import './player.css';
 import OverlayPanel from '../components/OverlayPanel.jsx';
@@ -71,6 +74,7 @@ export default function PlayerPage() {
     const [brightness, setBrightness] = createSignal(1);
     const [osd, setOsd] = createSignal({ visible: false, icon: 'fa-running', text: '', subtext: '' });
     const [loader, setLoader] = createSignal({ visible: false, title: '', subtitle: '' });
+    const [sleepMessage, setSleepMessage] = createSignal(/** @type {string | null} */ (null));
 
     let pendingSeek = 0;
     let progressReady = false;
@@ -83,6 +87,9 @@ export default function PlayerPage() {
     let osdTimeout;
     let lastTapTime = 0;
     let lastTapSide = /** @type {'left' | 'right' | null} */ (null);
+    let playerStartedAt = Date.now();
+    let lastInteractionAt = Date.now();
+    let sleepTriggered = false;
     let seekAccum = 0;
     let seekAccumSide = /** @type {'left' | 'right' | null} */ (null);
 
@@ -154,6 +161,24 @@ export default function PlayerPage() {
     function hideControls() {
         clearTimeout(controlsTimeout);
         setControlsVisible(false);
+    }
+
+    function markInteraction() {
+        lastInteractionAt = Date.now();
+        if (sleepTriggered) {
+            sleepTriggered = false;
+            setSleepMessage(null);
+        }
+    }
+
+    function checkSleepTimer() {
+        if (sleepTriggered || !video || video.paused) return;
+        if (isSleepTimerExpired(playerStartedAt, lastInteractionAt, Date.now(), SLEEP_TIMER_MS)) {
+            sleepTriggered = true;
+            try { video.pause(); } catch {}
+            setSleepMessage(SLEEP_TIMER_MESSAGE);
+            showOSD('fa-moon', 'Спящий режим', '130 минут без взаимодействия');
+        }
     }
 
     // ---- Watch progress (IndexedDB) ----
@@ -325,6 +350,7 @@ export default function PlayerPage() {
 
     /** Restore sound on the first user gesture after a blocked autoplay. */
     function unlockAudio() {
+        markInteraction();
         if (needsUnmute() && video) {
             video.muted = false;
             setNeedsUnmute(false);
@@ -332,6 +358,7 @@ export default function PlayerPage() {
     }
 
     function togglePlayPause() {
+        markInteraction();
         if (!video) return;
         if (video.paused || video.ended) startPlayback();
         else video.pause();
@@ -359,6 +386,7 @@ export default function PlayerPage() {
      * @param {string} name
      */
     function openPanel(name) {
+        markInteraction();
         setActivePanel(name);
         resetControlsTimer();
     }
@@ -382,6 +410,7 @@ export default function PlayerPage() {
      * @param {number} newIndex
      */
     async function changeSeason(newIndex) {
+        markInteraction();
         const index = Number(newIndex);
         if (index === selectedSeasonIndex()) return;
         const target = seasons()[index];
@@ -407,6 +436,7 @@ export default function PlayerPage() {
      * @param {number} newIndex
      */
     function selectTranslation(newIndex) {
+        markInteraction();
         const index = Number(newIndex);
         if (index === selectedTranslationIndex()) return;
         const resumeTime = video?.currentTime || 0;
@@ -436,6 +466,7 @@ export default function PlayerPage() {
      * @param {'left' | 'right' | null} [side]
      */
     function onGestureClick(side = null) {
+        markInteraction();
         if (isLocked()) return;
         const now = Date.now();
         const tapSide = /** @type {'left' | 'right' | null} */ (side);
@@ -506,12 +537,14 @@ export default function PlayerPage() {
         if (!video) return;
         setCurrentTime(video.currentTime || 0);
         persistProgress(false);
+        checkSleepTimer();
     }
 
     /**
      * @param {{ currentTarget: { value: any; }; }} event
      */
     function onSeekInput(event) {
+        markInteraction();
         if (!video || !(duration() > 0)) return;
         const pct = Number(event.currentTarget.value);
         video.currentTime = seekTimeFromPercent(pct, duration());
@@ -523,6 +556,7 @@ export default function PlayerPage() {
     onMount(async () => {
         // Keyboard shortcuts
         const onKeyDown = (/** @type {KeyboardEvent} */ event) => {
+            markInteraction();
             if (isLocked() || !video) return;
             switch (resolveKeyAction(event.key)) {
                 case KEY_ACTIONS.TOGGLE_PLAY:
@@ -581,6 +615,7 @@ export default function PlayerPage() {
 
         const onTouchStart = (/** @type {TouchEvent} */ event) => {
             lastTouchAt = Date.now();
+            markInteraction();
             if (isLocked() || !playerContainer) return;
             // When a panel is open (or the touch starts inside a horizontally
             // scrollable panel), let the panel handle the gesture instead of
@@ -653,6 +688,7 @@ export default function PlayerPage() {
 
         const onMouseMove = () => {
             if (Date.now() - lastTouchAt < 500) return;
+            markInteraction();
             resetControlsTimer();
         };
 
@@ -810,6 +846,25 @@ export default function PlayerPage() {
                         <p class="text-xs text-gray-400 mt-1">{loader().subtitle || 'Получение списка эпизодов'}</p>
                     </div>
                 </div>
+
+                {/* Sleep timer screen */}
+                <Show when={sleepMessage()}>
+                    <div class="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center gap-4 text-center p-6">
+                        <i class="fa-solid fa-moon text-4xl text-brand-orange"></i>
+                        <p class="text-sm text-gray-200">{sleepMessage()}</p>
+                        <button
+                            type="button"
+                            class="text-brand-orange hover:text-brand-orange/80 text-sm font-semibold"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                markInteraction();
+                                startPlayback();
+                            }}
+                        >
+                            Продолжить
+                        </button>
+                    </div>
+                </Show>
 
                 {/* Error screen */}
                 <Show when={error()}>
