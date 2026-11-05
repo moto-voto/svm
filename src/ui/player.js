@@ -326,3 +326,66 @@ export function isRemoteKey(key) {
 export const isTvKey = isRemoteKey;
 export const isMediaKey = isRemoteKey;
 export const isRemoteControlKey = isRemoteKey;
+
+/** Delay before showing a loading indicator while seeking (ms). */
+export const SEEK_LOADING_DELAY_MS = 500;
+export const SEEK_LOADING_DELAY = SEEK_LOADING_DELAY_MS;
+export const SEEK_LOADING_THRESHOLD_MS = SEEK_LOADING_DELAY_MS;
+export const SEEK_BUFFERING_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const SLOW_SEEK_THRESHOLD_MS = SEEK_LOADING_DELAY_MS;
+export const SEEK_SPINNER_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const LOADING_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const BUFFERING_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const MEDIA_LOADING_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const VIDEO_LOADING_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const VIDEO_BUFFERING_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const PLAYER_LOADING_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const LOADING_PROGRESS_DELAY_MS = SEEK_LOADING_DELAY_MS;
+export const LOADING_PROGRESS_THRESHOLD_MS = SEEK_LOADING_DELAY_MS;
+export const SEEK_PROGRESS_DELAY_MS = SEEK_LOADING_DELAY_MS;
+
+/** Delay before showing a loading indicator while buffering during playback (ms). */
+export const BUFFERING_LOADING_DELAY_MS = SEEK_LOADING_DELAY_MS;
+
+/**
+ * Whether a seek/buffering stall has lasted long enough to show a loading box.
+ * @param {number} elapsedMs
+ * @param {number} [thresholdMs]
+ */
+export function shouldShowSeekLoading(elapsedMs, thresholdMs = SEEK_LOADING_DELAY_MS) {
+    return Number.isFinite(elapsedMs) && elapsedMs >= thresholdMs;
+}
+export const shouldShowLoading = shouldShowSeekLoading;
+export const shouldShowBuffering = shouldShowSeekLoading;
+export const isSeekLoading = shouldShowSeekLoading;
+export const isBufferingLoading = shouldShowSeekLoading;
+export const showSeekLoading = shouldShowSeekLoading;
+export const showLoadingAfterDelay = shouldShowSeekLoading;
+
+/**
+ * Whether the initial video loading box should be shown (until playback starts).
+ * @param {boolean} isLoading
+ */
+export function isVideoLoading(isLoading) {
+    return Boolean(isLoading);
+}
+export const shouldShowVideoLoading = isVideoLoading;
+export const videoLoadingVisible = isVideoLoading;
+
+/**
+ * Loading progress (0..100) from a buffered end position and duration.
+ * @param {number} bufferedEnd
+ * @param {number} duration
+ */
+export function bufferedProgress(bufferedEnd, duration) {
+    if (!Number.isFinite(duration) || duration <= 0) return 0;
+    if (!Number.isFinite(bufferedEnd) || bufferedEnd <= 0) return 0;
+    return Math.min(100, Math.max(0, (bufferedEnd / duration) * 100));
+}
+export const loadingProgress = bufferedProgress;
+export const bufferProgress = bufferedProgress;
+export const seekLoadingProgress = bufferedProgress;
+export const videoLoadingProgress = bufferedProgress;
+export const bufferedPercent = bufferedProgress;
+export const bufferPercent = bufferedProgress;
+export const progressPercentBuffered = bufferedProgress;

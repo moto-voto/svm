@@ -29,6 +29,7 @@ import {
     KEY_ACTIONS,
     SEEK_STEP_SECONDS,
     VOLUME_STEP,
+    SEEK_LOADING_DELAY_MS,
     SLEEP_TIMER_MS,
     isSleepTimerExpired,
     SLEEP_TIMER_MESSAGE,
@@ -76,6 +77,13 @@ export default function PlayerPage() {
     const [loader, setLoader] = createSignal({ visible: false, title: '', subtitle: '' });
     const [sleepMessage, setSleepMessage] = createSignal(/** @type {string | null} */ (null));
 
+    // Media (video element) loading state: covers the gap between assigning a
+    // source URL to the <video> tag and the moment playback actually starts,
+    // plus buffering while seeking that takes longer than 0.5s.
+    const [videoLoading, setVideoLoading] = createSignal(false);
+    const [seekLoading, setSeekLoading] = createSignal(false);
+    const [mediaProgress, setMediaProgress] = createSignal(0);
+
     let pendingSeek = 0;
     let progressReady = false;
     let suppressPersist = false;
@@ -85,6 +93,10 @@ export default function PlayerPage() {
     let controlsTimeout;
     /** @type {ReturnType<typeof setTimeout> | undefined} */
     let osdTimeout;
+    /** @type {ReturnType<typeof setTimeout> | undefined} */
+    let seekLoadingTimer;
+    /** @type {ReturnType<typeof setTimeout> | undefined} */
+    let bufferLoadingTimer;
     let lastTapTime = 0;
     let lastTapSide = /** @type {'left' | 'right' | null} */ (null);
     let playerStartedAt = Date.now();
@@ -312,6 +324,13 @@ export default function PlayerPage() {
         persistWatchHistory(epIdx);
         pendingSeek = startTime;
         switchingEpisode = true;
+        // Show a loading box from the moment the <video> gets its URL until
+        // playback actually starts (buffering the first frames can lag).
+        setVideoLoading(true);
+        setSeekLoading(false);
+        setMediaProgress(0);
+        clearTimeout(seekLoadingTimer);
+        clearTimeout(bufferLoadingTimer);
         video.src = ep.file;
         video.load();
         // Mark the newly loaded episode as the season's last played one.
@@ -533,6 +552,63 @@ export default function PlayerPage() {
         }
     }
 
+    function onLoadedData() {
+        if (!video) return;
+        updateBufferedProgress();
+    }
+
+    function onProgress() {
+        if (!video) return;
+        updateBufferedProgress();
+    }
+
+    function updateBufferedProgress() {
+        if (!video) return;
+        const buffered = video.buffered;
+        const dur = video.duration || duration();
+        if (buffered && buffered.length && dur > 0) {
+            try {
+                const end = buffered.end(buffered.length - 1);
+                setMediaProgress(Math.min(100, (end / dur) * 100));
+            } catch {
+                // Ignore malformed buffered ranges.
+            }
+        }
+    }
+
+    function onCanPlay() {
+        clearTimeout(bufferLoadingTimer);
+        setVideoLoading(false);
+    }
+
+    function onPlaying() {
+        setIsPlaying(true);
+        clearTimeout(bufferLoadingTimer);
+        setVideoLoading(false);
+        clearTimeout(seekLoadingTimer);
+        setSeekLoading(false);
+    }
+
+    function onWaiting() {
+        // Buffering during playback: only show the loading box if it lasts
+        // longer than 0.5s to avoid flicker on tiny stalls.
+        clearTimeout(bufferLoadingTimer);
+        bufferLoadingTimer = setTimeout(() => setVideoLoading(true), SEEK_LOADING_DELAY_MS);
+    }
+
+    function onSeeking() {
+        // Only show a loading indicator when seeking takes more than 0.5s.
+        clearTimeout(seekLoadingTimer);
+        seekLoadingTimer = setTimeout(() => setSeekLoading(true), SEEK_LOADING_DELAY_MS);
+        setMediaProgress(0);
+    }
+
+    function onSeeked() {
+        clearTimeout(seekLoadingTimer);
+        setSeekLoading(false);
+        updateBufferedProgress();
+    }
+
     function onTimeUpdate() {
         if (!video) return;
         setCurrentTime(video.currentTime || 0);
@@ -733,6 +809,8 @@ export default function PlayerPage() {
             playerContainer?.removeEventListener('mousemove', onMouseMove);
             clearTimeout(controlsTimeout);
             clearTimeout(osdTimeout);
+            clearTimeout(seekLoadingTimer);
+            clearTimeout(bufferLoadingTimer);
         });
 
         // Initial data load
@@ -789,6 +867,15 @@ export default function PlayerPage() {
                     preload="auto"
                     onTimeUpdate={onTimeUpdate}
                     onLoadedMetadata={onLoadedMetadata}
+                    onLoadStart={() => { setVideoLoading(true); setMediaProgress(0); }}
+                    onLoadedData={onLoadedData}
+                    onProgress={onProgress}
+                    onCanPlay={onCanPlay}
+                    onCanPlayThrough={onCanPlay}
+                    onPlaying={onPlaying}
+                    onWaiting={onWaiting}
+                    onSeeking={onSeeking}
+                    onSeeked={onSeeked}
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => {
                         setIsPlaying(false);
@@ -850,7 +937,7 @@ export default function PlayerPage() {
 
                 {/* Loading Overlay */}
                 <div
-                    class="absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center space-y-4 transition-opacity duration-300"
+                    class="absolute inset-0 z-40 bg-black/80 flex flex-col items-center justify-center space-y-4 transition-opacity duration-300"
                     classList={{ 'opacity-0 pointer-events-none': !loader().visible }}
                 >
                     <div class="relative w-16 h-16 flex items-center justify-center">
@@ -860,6 +947,32 @@ export default function PlayerPage() {
                     <div class="text-center">
                         <p class="text-lg font-semibold text-white">{loader().title || 'Загрузка сезона...'}</p>
                         <p class="text-xs text-gray-400 mt-1">{loader().subtitle || 'Получение списка эпизодов'}</p>
+                    </div>
+                </div>
+
+                {/* Video loading / buffering overlay (initial load + slow seeks) */}
+                <div
+                    class="absolute inset-0 z-40 bg-black/60 flex flex-col items-center justify-center space-y-4 transition-opacity duration-300"
+                    classList={{ 'opacity-0 pointer-events-none': !(videoLoading() || seekLoading()) }}
+                >
+                    <div class="relative w-16 h-16 flex items-center justify-center">
+                        <div class="absolute w-16 h-16 border-4 border-brand-orange/20 border-t-brand-orange rounded-full animate-spin"></div>
+                        <i class="fa-solid fa-circle-play text-brand-orange text-xl"></i>
+                    </div>
+                    <div class="text-center w-64">
+                        <p class="text-lg font-semibold text-white">
+                            {seekLoading() ? 'Перемотка...' : 'Загрузка видео...'}
+                        </p>
+                        <p class="text-xs text-gray-400 mt-1">
+                            {seekLoading() ? 'Буферизация' : 'Подготовка к воспроизведению'}
+                        </p>
+                        <div class="mt-3 h-1.5 w-full rounded-full bg-white/20 overflow-hidden">
+                            <div
+                                class="h-full bg-brand-orange rounded-full transition-all duration-200"
+                                style={{ width: `${mediaProgress()}%` }}
+                            />
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">{Math.round(mediaProgress())}%</p>
                     </div>
                 </div>
 
