@@ -104,7 +104,7 @@ export default function SeriesDetailsPage() {
                         <A
                             href={resolveBackHref(fromParam)}
                             noScroll
-                            class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-3 sm:px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
+                            class="inline-flex items-center gap-2 bg-[#222226] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-3 sm:px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
                         >
                             <i class="fa-solid fa-arrow-left text-brand-orange"></i>
                             <span>Назад</span>
@@ -130,7 +130,7 @@ export default function SeriesDetailsPage() {
                         <Show
                             when={details()?.fullLink}
                             fallback={
-                                <span class="inline-flex items-center gap-2 bg-[#222226] text-gray-300 font-semibold text-sm py-2.5 px-3 sm:px-4 rounded-lg border border-brand-cardBorder cursor-not-allowed shrink-0">
+                                <span class="inline-flex items-center gap-2 bg-[#222226] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange text-gray-300 font-semibold text-sm py-2.5 px-3 sm:px-4 rounded-lg border border-brand-cardBorder cursor-not-allowed shrink-0">
                                     <i class="fa-solid fa-play text-brand-orange text-sm"></i>
                                     <span>Смотреть</span>
                                 </span>
@@ -144,7 +144,7 @@ export default function SeriesDetailsPage() {
                                     normalizeImageUrl(details()?.image || ''),
                                     fromParam
                                 )}
-                                class="inline-flex items-center gap-2 bg-[#222226] hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-3 sm:px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
+                                class="inline-flex items-center gap-2 bg-[#222226] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange hover:bg-[#2c2c32] text-white hover:text-brand-orange text-sm font-semibold px-3 sm:px-4 py-2.5 rounded-lg border border-brand-cardBorder transition-all duration-200 active:scale-95 shadow-sm shrink-0"
                             >
                                 <i class="fa-solid fa-play text-brand-orange text-sm"></i>
                                 <span>Смотреть</span>

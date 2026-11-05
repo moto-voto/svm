@@ -122,3 +122,20 @@ select option {
     height: 44px;
     animation: spin 0.8s linear infinite;
 }
+
+/* ATV / remote-control focus affordance: every interactive element gets a
+   visible focus ring when navigated with a D-pad, without showing it on
+   mouse/touch clicks. */
+:focus-visible {
+    outline: 2px solid #ff9900;
+    outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #ff9900;
+    outline-offset: 2px;
+}

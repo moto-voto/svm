@@ -39,7 +39,7 @@ export default function ViewSwitcher(props) {
                     <A
                         href={view.href}
                         noScroll
-                        class="flex-1 inline-flex items-center justify-center gap-1 sm:gap-2 py-2.5 px-1 sm:px-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap"
+                        class="flex-1 inline-flex items-center justify-center gap-1 sm:gap-2 py-2.5 px-1 sm:px-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange"
                         classList={{
                             'bg-brand-orange text-black shadow': props.current === view.id,
                             'text-gray-300 hover:bg-[#2b2b31] hover:text-white': props.current !== view.id,

@@ -24,8 +24,9 @@ import { Show } from 'solid-js';
  */
 export default function ThumbCard(props) {
     return (
-        <div
-            class="flex-shrink-0 w-40 sm:w-52 cursor-pointer group"
+        <button
+            type="button"
+            class="flex-shrink-0 w-40 sm:w-52 cursor-pointer group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange rounded-xl"
             onClick={(event) => {
                 event.stopPropagation();
                 props.onClick();
@@ -56,6 +57,6 @@ export default function ThumbCard(props) {
             >
                 {props.title}
             </p>
-        </div>
+        </button>
     );
 }

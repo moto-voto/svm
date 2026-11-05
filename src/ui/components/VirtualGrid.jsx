@@ -165,7 +165,7 @@ export default function VirtualGrid(props) {
                     return (
                         <A
                             href={`/series-details?url=${encodeURIComponent(item().fullLink)}${props.detailsFrom ? `&from=${encodeURIComponent(props.detailsFrom)}` : ''}`}
-                            class="poster-card"
+                            class="poster-card focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange"
                             style={position(index)}
                         >
                             <div

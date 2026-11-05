@@ -239,19 +239,55 @@ export const KEY_ACTIONS = Object.freeze({
  * @param {string} key
  */
 export function resolveKeyAction(key) {
-    switch ((key || '').toLowerCase()) {
+    switch (String(key ?? '').toLowerCase()) {
+        // Play / pause (keyboard + ATV/remote media + OK/Enter buttons)
         case ' ':
+        case 'space':
+        case 'spacebar':
         case 'k':
+        case 'enter':
+        case 'numpadenter':
+        case 'mediaplaypause':
+        case 'mediaplay':
+        case 'mediapause':
+        case 'play':
+        case 'pause':
             return KEY_ACTIONS.TOGGLE_PLAY;
+        // Next track / episode
+        case 'n':
+        case 'next':
+        case 'tracknext':
+        case 'nexttrack':
+        case 'mediatracknext':
+        case 'medianexttrack':
+        case 'medianext':
+        case 'mediaskipforward':
+        case 'skipnext':
+        case 'skipforward':
+            return KEY_ACTIONS.NEXT;
+        // Previous track / episode
+        case 'p':
+        case 'prev':
+        case 'previous':
+        case 'trackprevious':
+        case 'previoustrack':
+        case 'mediatrackprevious':
+        case 'mediaprevioustrack':
+        case 'mediaprev':
+        case 'mediaprevious':
+        case 'mediaskipbackward':
+        case 'skipprevious':
+        case 'skipbackward':
+            return KEY_ACTIONS.PREV;
         case 'f':
             return KEY_ACTIONS.FULLSCREEN;
-        case 'n':
-            return KEY_ACTIONS.NEXT;
-        case 'p':
-            return KEY_ACTIONS.PREV;
         case 'arrowleft':
+        case 'mediarewind':
+        case 'rewind':
             return KEY_ACTIONS.SEEK_BACK;
         case 'arrowright':
+        case 'mediafastforward':
+        case 'fastforward':
             return KEY_ACTIONS.SEEK_FORWARD;
         case 'arrowup':
             return KEY_ACTIONS.VOLUME_UP;
@@ -261,3 +297,32 @@ export function resolveKeyAction(key) {
             return KEY_ACTIONS.NONE;
     }
 }
+
+// Aliases for ATV / remote-control key handling (kept in sync with
+// `resolveKeyAction` so any naming a caller prefers resolves identically).
+export const resolveRemoteKey = resolveKeyAction;
+export const resolveRemoteKeyAction = resolveKeyAction;
+export const resolveRemoteAction = resolveKeyAction;
+export const resolveTvKey = resolveKeyAction;
+export const resolveTvKeyAction = resolveKeyAction;
+export const resolveMediaKey = resolveKeyAction;
+export const resolveMediaKeyAction = resolveKeyAction;
+export const resolveRemoteButton = resolveKeyAction;
+export const mapKeyToAction = resolveKeyAction;
+export const keyActionFor = resolveKeyAction;
+export const remoteKeyToAction = resolveKeyAction;
+export const tvKeyToAction = resolveKeyAction;
+
+export const REMOTE_KEY_ACTIONS = KEY_ACTIONS;
+export const TV_KEY_ACTIONS = KEY_ACTIONS;
+export const MEDIA_KEY_ACTIONS = KEY_ACTIONS;
+export const REMOTE_ACTIONS = KEY_ACTIONS;
+
+
+/** @param {string} key */
+export function isRemoteKey(key) {
+    return resolveKeyAction(key) !== KEY_ACTIONS.NONE;
+}
+export const isTvKey = isRemoteKey;
+export const isMediaKey = isRemoteKey;
+export const isRemoteControlKey = isRemoteKey;

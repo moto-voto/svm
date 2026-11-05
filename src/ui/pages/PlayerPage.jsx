@@ -558,7 +558,21 @@ export default function PlayerPage() {
         const onKeyDown = (/** @type {KeyboardEvent} */ event) => {
             markInteraction();
             if (isLocked() || !video) return;
-            switch (resolveKeyAction(event.key)) {
+            // Let native button/anchor activation handle the key when focus is
+            // already on an interactive control, so we don't double-fire (e.g.
+            // Enter on the "Next" button must not also toggle play). Dedicated
+            // media keys are always handled globally.
+            const target = event.target;
+            const isMediaKey = /^media/i.test(String(event.key || ''));
+            if (!isMediaKey && target instanceof Element && target.closest('button, a, input, select, textarea')) {
+                return;
+            }
+            const action = resolveKeyAction(event.key);
+            if (action === KEY_ACTIONS.NONE) return;
+            // Keep the browser/TV from also acting on the media key (e.g.
+            // scrolling the page on arrow keys, toggling native fullscreen).
+            event.preventDefault();
+            switch (action) {
                 case KEY_ACTIONS.TOGGLE_PLAY:
                     togglePlayPause();
                     break;
@@ -693,6 +707,7 @@ export default function PlayerPage() {
         };
 
         document.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keydown', onKeyDown);
         document.addEventListener('pointerdown', unlockAudio);
         document.addEventListener('keydown', unlockAudio);
         document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -705,6 +720,7 @@ export default function PlayerPage() {
 
         onCleanup(() => {
             document.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('keydown', onKeyDown);
             document.removeEventListener('pointerdown', unlockAudio);
             document.removeEventListener('keydown', unlockAudio);
             document.removeEventListener('fullscreenchange', onFullscreenChange);
