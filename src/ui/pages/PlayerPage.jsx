@@ -136,6 +136,12 @@ export default function PlayerPage() {
      */
     function showOSD(icon, text, subtext = '') {
         setOsd({ visible: true, icon, text, subtext });
+        // A seek/volume/brightness OSD means the user is interacting; never
+        // stack the buffering loader on top of it.
+        clearTimeout(seekLoadingTimer);
+        clearTimeout(bufferLoadingTimer);
+        setSeekLoading(false);
+        setVideoLoading(false);
         clearTimeout(osdTimeout);
         osdTimeout = setTimeout(() => {
             setOsd((prev) => ({ ...prev, visible: false }));
@@ -593,13 +599,13 @@ export default function PlayerPage() {
         // Buffering during playback: only show the loading box if it lasts
         // longer than 0.5s to avoid flicker on tiny stalls.
         clearTimeout(bufferLoadingTimer);
-        bufferLoadingTimer = setTimeout(() => setVideoLoading(true), SEEK_LOADING_DELAY_MS);
+        bufferLoadingTimer = setTimeout(() => { if (!osd().visible) setVideoLoading(true); }, SEEK_LOADING_DELAY_MS);
     }
 
     function onSeeking() {
         // Only show a loading indicator when seeking takes more than 0.5s.
         clearTimeout(seekLoadingTimer);
-        seekLoadingTimer = setTimeout(() => setSeekLoading(true), SEEK_LOADING_DELAY_MS);
+        seekLoadingTimer = setTimeout(() => { if (!osd().visible) setSeekLoading(true); }, SEEK_LOADING_DELAY_MS);
         setMediaProgress(0);
     }
 
@@ -953,7 +959,7 @@ export default function PlayerPage() {
                 {/* Video loading / buffering overlay (initial load + slow seeks) */}
                 <div
                     class="absolute inset-0 z-40 bg-black/60 flex flex-col items-center justify-center space-y-4 transition-opacity duration-300"
-                    classList={{ 'opacity-0 pointer-events-none': !(videoLoading() || seekLoading()) }}
+                    classList={{ 'opacity-0 pointer-events-none': !(videoLoading() || seekLoading()) || osd().visible }}
                 >
                     <div class="relative w-16 h-16 flex items-center justify-center">
                         <div class="absolute w-16 h-16 border-4 border-brand-orange/20 border-t-brand-orange rounded-full animate-spin"></div>
