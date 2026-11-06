@@ -1,5 +1,6 @@
 import express from 'express';
 import { join } from 'path';
+import { existsSync } from 'fs';
 import { log } from './common.js';
 import { apiSearch } from './api/api-search.js';
 import { apiPlaylist } from './api/api-playlist.js';
@@ -131,12 +132,23 @@ router.get('/api/series-filter', async (req, res) => {
 // ---- SolidJS SPA (built by `npm run build:fe` into dist/public) ----
 
 const UI_DIST = join(__dirname, '..', 'dist', 'public');
-router.use(express.static(UI_DIST));
 
-// SPA fallback: unknown paths render the app so the client router can handle them.
-router.use((_req, res) => {
-    res.sendFile(join(UI_DIST, 'index.html'));
-});
+// Register the SPA (static assets + fallback) only when it has actually been
+// built on disk, so the server still serves the API when no UI is present.
+if (existsSync(UI_DIST)) {
+    router.use(express.static(UI_DIST));
+
+    // SPA fallback: unknown paths render the app so the client router can handle them.
+    router.use((_req, res) => {
+        res.sendFile(join(UI_DIST, 'index.html'));
+    });
+} else {
+    // No UI on disk: only the API is available. Reject everything else
+    // immediately so folder/file scanning cannot harvest the SPA shell.
+    router.use((_req, res) => {
+        res.status(404).end();
+    });
+}
 
 // Mount everything under the configured prefix ("/" when unset).
 // The trailing-slash redirect keeps relative asset URLs (`./assets/...`)
