@@ -20,6 +20,9 @@ cp -r "$STAGE/public/." "$WEB/"
 echo "==> Installing app bundle..."
 cp "$STAGE/svm.js" "$APP/svm.js"
 
+echo "==> Building server with bun"
+bun build --compile --bytecode --minify --outfile "$APP/svm" "$APP/svm.js"
+
 echo "==> Fixing ownership and permissions..."
 chown -R root:svm "$WEB"
 chmod -R 755 "$WEB"
