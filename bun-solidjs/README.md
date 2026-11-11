@@ -149,7 +149,7 @@ bun bun-solidjs/dev.js --port=3000            # custom port
 bun bun-solidjs/dev.js --config=my.config.js  # custom config
 ```
 
-HMR is **basic** (full page reload via `solid-js/hmr`). For component-level HMR with state preservation (like Vite), use `vite dev`.
+HMR is **component-level** via [`solid-refresh`](https://github.com/solidjs/solid-refresh) (add it to `devDependencies`): edited components hot-swap with state preserved. CSS changes hot-swap the `<link>` without a reload; anything else falls back to a full page reload. Bare imports are resolved with browser export conditions and served through the Babel transform; CSS `import`s are rewritten to `<link>` injection so the module graph never breaks.
 
 ## Plugin usage standalone
 

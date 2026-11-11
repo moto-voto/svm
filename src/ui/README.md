@@ -46,41 +46,43 @@ All four poster-grid pages share `components/ViewSwitcher.jsx` in the header
 
 ## Tooling decision
 
-**Use Vite + `vite-plugin-solid`.** Do not build Solid with a bare bundler.
+**Use `bun-solidjs/` (Bun + `babel-preset-solid`).** Do not build Solid with a
+bare bundler.
 
 - Solid's fine-grained reactivity is produced at compile time by
-  `babel-preset-solid`. `vite-plugin-solid` wires that Babel preset (plus
-  `solid-refresh` HMR) in for us.
+  `babel-preset-solid`. Both `bun bun-solidjs/build.js` (production) and
+  `bun bun-solidjs/dev.js` (dev server) run that same Babel preset.
+- The dev server adds **component-level HMR** via `solid-refresh` (state
+  preserved), CSS hot-swap, and a full-reload fallback — no Vite needed.
 - Plain esbuild / Oxc / SWC have only a generic (React-style) JSX transform and
-  do not produce idiomatic Solid output. If a non-Vite bundler is ever needed,
-  it must still run `babel-preset-solid` (e.g. `esbuild-plugin-solid`).
-- Vite is the official/first-party path used by the Solid docs and templates.
+  do not produce idiomatic Solid output. If a non-Bun bundler is ever needed,
+  it must still run `babel-preset-solid` (e.g. `vite-plugin-solid`).
 
 ## Commands
 
 ```bash
-npm run build:fe   # production frontend build -> dist/public
-npm run build:be   # self-contained server build -> dist/svm.js
-npm run dev:fe     # Vite dev server with HMR
-npm run dev:be     # run the Express server from source
-npm start          # build:fe + build:be, then node dist/svm.js
+bun run build:fe   # production frontend build (bun-solidjs/build.js) -> dist
+bun run build:be   # self-contained server build -> dist/svm.js
+bun run dev:fe     # bun-solidjs dev server with component-level HMR
+bun run dev:be     # run the Express server from source
+bun start          # build:fe + build:be, then bun dist/svm.js
 
-npm test           # run all unit tests (node:test)
-npm run test:be    # backend tests only
-npm run test:fe    # frontend tests only
+bun test           # run all unit tests (node:test)
+bun run test:be    # backend tests only
+bun run test:fe    # frontend tests only
 ```
 
 ## Self-contained server build (`node svm.js`)
 
-`npm run build:be` produces a **single file**, `dist/svm.js`, that contains the
+`bun run build:be` produces a **single file**, `dist/svm.js`, that contains the
 server plus all of its Node dependencies (express, cheerio, ...). It needs no
 `node_modules`. The UI is **not embedded** in the bundle: the server keeps
 serving the SPA from disk (`dist/public`), so build the frontend next to it:
 
 ```bash
-npm run build:fe          # -> dist/public
-npm run build:be          # -> dist/svm.js (bundles server + node_modules)
-node dist/svm.js          # serves the SPA from dist/public and /api/*
+bun run build:fe          # -> dist (index.html + assets)
+bun run build:be          # -> dist/svm.js (bundles server + node_modules)
+bun dist/svm.js           # serves the SPA from dist and /api/*
 ```
 
 The deployed folder is just the build output:
@@ -93,17 +95,17 @@ dist/
 
 How it works:
 
-- `vite.config.be.js` sets `ssr.noExternal: true`, so every server-side
-  dependency is inlined into the output. Node built-ins stay external.
-- `src/server.js` is unchanged: it serves the SPA from
-  `join(__dirname, '..', 'dist', 'public')` (which resolves to `dist/public`
-  next to `svm.js`), with `express.static` and a SPA fallback, plus the API.
-- The server does not embed the UI, so build order is not critical;
-  `dist/public` just has to exist at runtime.
+- `bun run build:be` bundles with `bun build --target node`, so every
+  server-side dependency is inlined into the output. Node built-ins stay
+  external.
+- `src/server.js` is unchanged: it serves the SPA from the build output next
+  to `svm.js`, with `express.static` and a SPA fallback, plus the API.
+- The server does not embed the UI, so build order is not critical; the
+  frontend build just has to exist at runtime.
 
 > **Troubleshooting `ERR_MODULE_NOT_FOUND: Cannot find package 'express'`** —
 > the `svm.js` you ran is an old/unbundled artifact. Rebuild with
-> `npm run build:be` and copy the fresh `dist/svm.js` (and `dist/public`).
+> `bun run build:be` and copy the fresh `dist/svm.js` (and the frontend build).
 > Check it with `grep -c '"express"' dist/svm.js` (must be `0`).
 
 ## Hosting under a prefix (`/svm`, ...)
