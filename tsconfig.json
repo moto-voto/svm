@@ -6,7 +6,7 @@
     "allowJs": true,
     "checkJs": true,
     "strict": true,
-    "types": ["node", "vite/client", "solid-js"],
+    "types": ["node", "solid-js"],
     "noEmit": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
