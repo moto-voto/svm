@@ -7,14 +7,15 @@
     "test": "node --test \"tests/**/*.test.js\"",
     "test:be": "node --test \"tests/be/**/*.test.js\"",
     "test:fe": "node --test \"tests/fe/**/*.test.js\"",
-    "start": "bun run build:fe && bun run build:be && bun dist/svm.js",
+    "start": "bun run build:fe:bun && bun run build:be:bun && bun dist/svm.js",
     "build:fe": "bunx --bun vite build --config vite.config.fe.js",
+    "build:fe:bun": "bun bun-solidjs/build.js",
     "build:be": "bunx --bun vite build --config vite.config.be.js",
+    "build:be:bun": "bun build --minify --target node --outfile dist/svm.js src/server.js",
     "build": "bun install && bun test && bun run build:fe && bun run build:be",
     "dev:fe": "bunx --bun vite --config vite.config.fe.js",
     "dev:be": "bun src/server.js",
-    "deploy": "bun scripts/deploy.js",
-    "check": "tsc"
+    "deploy": "bun scripts/deploy.js"
   },
   "keywords": [],
   "type": "module",
@@ -26,9 +27,15 @@
     "solid-js": "^1.9.17"
   },
   "devDependencies": {
+    "@babel/core": "^8.1.0",
+    "@babel/preset-typescript": "^8.0.7",
+    "@solidjs/compiler": "^2.0.0-rc.2",
+    "@solidjs/compiler-wasm32-wasi": "^2.0.0-rc.2",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
-    "typescript": "^6.0.3",
+    "babel-preset-solid": "^1.9.16",
+    "esbuild": "^0.28.2",
+    "solid-refresh": "^0.6.3",
     "vite": "^8.3.5",
     "vite-plugin-solid": "^2.11.14"
   }

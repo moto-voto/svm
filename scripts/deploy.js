@@ -18,8 +18,8 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const DIST_DIR = path.join(PROJECT_ROOT, 'dist');
 const NODE_MODULES_DIR = path.join(PROJECT_ROOT, 'node_modules');
 
-// npm is npm.cmd on Windows
-const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+// bun is bun.cmd on Windows
+const BUN = process.platform === 'win32' ? 'bun.cmd' : 'bun';
 
 console.log(`==> Starting deployment to ${REMOTE_HOST} (IPv4)...`);
 
@@ -31,9 +31,9 @@ console.log(`==> Starting deployment to ${REMOTE_HOST} (IPv4)...`);
 function runCommand(command, args) {
     const isWin = process.platform === 'win32';
 
-    // Windows: npm.cmd requires a shell (CVE-2024-27980).
+    // Windows: bun.cmd requires a shell (CVE-2024-27980).
     //          Passing a *string* (not an array) avoids DEP0190.
-    // POSIX:   npm is a real binary; use the args array, no shell.
+    // POSIX:   bun is a real binary; use the args array, no shell.
     const result = isWin
         ? spawnSync([command, ...args].join(' '), { stdio: 'inherit', shell: true })
         : spawnSync(command, args, { stdio: 'inherit' });
@@ -67,23 +67,23 @@ function removeLocalDir(dir) {
 removeLocalDir(DIST_DIR);
 removeLocalDir(NODE_MODULES_DIR);
 
-// 1. Install npm packages from scratch
-console.log("==> Installing npm packages...");
-runCommand(NPM, ['install', '--no-audit', '--no-fund']);
+// 1. Install packages from scratch
+console.log("==> Installing packages...");
+runCommand(BUN, ['install']);
 
 // 2. Type check
 console.log("==> Running type check (tsc)...");
-runCommand(NPM, ['run', 'check']);
+runCommand(BUN, ['check']);
 
 // 3. Run tests
 console.log("==> Running tests...");
-runCommand(NPM, ['test']);
+runCommand(BUN, ['test']);
 
 // 4. Build frontend and backend
 console.log("==> Building frontend...");
-runCommand(NPM, ['run', 'build:fe']);
+runCommand(BUN, ['run', 'build:fe']);
 console.log("==> Building backend...");
-runCommand(NPM, ['run', 'build:be']);
+runCommand(BUN, ['run', 'build:be']);
 
 // ===================================================
 // Everything above must succeed before touching the host.

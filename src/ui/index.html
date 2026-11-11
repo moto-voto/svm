@@ -12,8 +12,7 @@
     <!-- Inter font (series details) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Favicons (src/ui/public). Relative so they resolve under any deployment
-         prefix and on deep client-side routes, like the bundled ./assets/... -->
+    <!-- Favicons - copied to output root by build script -->
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
 
@@ -41,11 +40,16 @@
             },
         };
     </script>
+    <!-- Eruda: Mobile browser console - tap the floating button to open -->
+    <!-- 
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init({useShadowDom: true});</script>
+    -->
 </head>
 
 <body>
     <div id="root"></div>
-    <script type="module" src="/index.jsx"></script>
+    <script type="module" src="./index.jsx"></script>
 </body>
 
 </html>
